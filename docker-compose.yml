@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: qatra
+      POSTGRES_PASSWORD: qatra
+      POSTGRES_DB: qatra
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qatra"]
+      interval: 5s
+      retries: 10
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["8025:8025", "1025:1025"]   # الواجهة على 8025 والـ SMTP على 1025
+  api:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    env_file: apps/api/.env
+    environment:
+      DATABASE_URL: postgresql://qatra:qatra@db:5432/qatra
+      SMTP_HOST: mailpit
+    depends_on: { db: { condition: service_healthy } }
+    ports: ["4000:4000"]
+volumes:
+  pgdata:
