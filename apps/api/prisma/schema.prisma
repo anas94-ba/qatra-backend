@@ -1,0 +1,404 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────── Enums ─────────
+enum Role {
+  ADMIN
+  ORG
+  CAMP_REP
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum EntityType {
+  CAMP
+  LOCAL_ORG
+  INTERNATIONAL_ORG
+  INITIATIVE
+}
+
+enum OrgType {
+  LOCAL_ORG
+  INTERNATIONAL_ORG
+  INITIATIVE
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum EntityStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PlanStatus {
+  PROPOSED
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum DeliveryStatus {
+  PENDING
+  CONFIRMED
+  CONFIRMED_DIFF
+  REJECTED
+  CANCELLED
+}
+
+enum DonationLinkType {
+  WHATSAPP
+  EXTERNAL_SITE
+}
+
+// ───────── الحسابات والتسجيل ─────────
+model User {
+  id                    String    @id @default(uuid())
+  email                 String    @unique
+  passwordHash          String
+  fullName              String
+  phone                 String?
+  role                  Role
+  status                UserStatus @default(ACTIVE)
+  emailVerifiedAt       DateTime?
+  mustChangePassword    Boolean   @default(false)
+  tempPasswordExpiresAt DateTime?
+  lastLoginAt           DateTime?
+  failedLoginCount      Int       @default(0)
+  lockedUntil           DateTime?
+  organizationId        String?
+  campId                String?
+  createdById           String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+
+  organization         Organization?            @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  camp                 Camp?                    @relation(fields: [campId], references: [id], onDelete: SetNull)
+  registrationRequest  RegistrationRequest?
+  emailVerifications   EmailVerificationToken[]
+  passwordResets       PasswordResetToken[]
+  refreshTokens        RefreshToken[]
+  notifications        Notification[]
+
+  @@index([organizationId])
+  @@index([campId])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RegistrationRequest {
+  id               String        @id @default(uuid())
+  entityType       EntityType
+  name             String
+  region           String?
+  lat              Float?
+  lng              Float?
+  contactName      String
+  email            String
+  phone            String
+  description      String?
+  status           RequestStatus @default(PENDING)
+  rejectionReason  String?
+  internalNote     String?
+  attemptCount     Int           @default(1)
+  extraAttempts    Int           @default(0)
+  details          Json          @default("{}")
+  rejectionHistory Json          @default("[]")
+  userId           String        @unique
+  decidedById      String?
+  decidedAt        DateTime?
+  createdEntityId  String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([status, createdAt])
+}
+
+// ───────── الجهات ─────────
+model Organization {
+  id                 String       @id @default(uuid())
+  name               String
+  orgType            OrgType
+  contact            String?
+  description        String?
+  registrationNumber String?
+  status             EntityStatus @default(ACTIVE)
+  suspendedReason    String?
+  suspendedAt        DateTime?
+  suspendedById      String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  deletedAt          DateTime?
+
+  users      User[]
+  plans      WaterPlan[]
+  deliveries Delivery[]
+
+  @@index([status, orgType])
+}
+
+model Camp {
+  id              String       @id @default(uuid())
+  name            String
+  lat             Float
+  lng             Float
+  region          String
+  status          EntityStatus @default(ACTIVE)
+  publicVisible   Boolean      @default(false)
+  suspendedReason String?
+  suspendedAt     DateTime?
+  suspendedById   String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  deletedAt       DateTime?
+
+  users           User[]
+  snapshots       CampSnapshot[]
+  planCamps       PlanCamp[]
+  recommendations Recommendation[]
+  deliveries      Delivery[]
+
+  @@index([status])
+}
+
+model CampSnapshot {
+  id                  String       @id @default(uuid())
+  campId              String
+  families            Int
+  population          Int
+  children            Int
+  disabled            Int
+  waterReceivedLiters Int          @default(0)
+  lastDistributionAt  DateTime?    @db.Date
+  otherSources        String?
+  reportedAt          DateTime
+  source              String
+  reviewStatus        ReviewStatus @default(PENDING)
+  rejectionReason     String?
+  reviewedById        String?
+  reviewedAt          DateTime?
+  createdById         String?
+  createdAt           DateTime     @default(now())
+
+  camp Camp @relation(fields: [campId], references: [id])
+
+  @@index([campId, reviewStatus, reportedAt])
+}
+
+// ───────── الخطط والخوارزمية ─────────
+model WaterPlan {
+  id               String     @id @default(uuid())
+  orgId            String
+  name             String
+  dailyLiters      Int
+  startDate        DateTime   @db.Date
+  endDate          DateTime   @db.Date
+  regions          Json       @default("[]")
+  distributionDays Json       @default("[]")
+  constraints      Json       @default("{}")
+  status           PlanStatus @default(PROPOSED)
+  createdById      String
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  org             Organization     @relation(fields: [orgId], references: [id])
+  planCamps       PlanCamp[]
+  recommendations Recommendation[]
+  deliveries      Delivery[]
+
+  @@index([orgId, status])
+}
+
+model PlanCamp {
+  planId String
+  campId String
+  plan   WaterPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  camp   Camp      @relation(fields: [campId], references: [id])
+
+  @@id([planId, campId])
+}
+
+model Recommendation {
+  id               String   @id @default(uuid())
+  planId           String
+  campId           String
+  score            Float
+  suggestedLiters  Int
+  reasons          Json
+  warnings         Json     @default("[]")
+  algorithmVersion Int
+  createdAt        DateTime @default(now())
+
+  plan     WaterPlan @relation(fields: [planId], references: [id])
+  camp     Camp      @relation(fields: [campId], references: [id])
+  approval Approval?
+
+  @@index([planId])
+}
+
+model Approval {
+  id               String   @id @default(uuid())
+  recommendationId String   @unique
+  approvedLiters   Int
+  adjustmentReason String?
+  approvedById     String
+  createdAt        DateTime @default(now())
+
+  recommendation Recommendation @relation(fields: [recommendationId], references: [id])
+  deliveries     Delivery[]
+}
+
+model AlgorithmConfig {
+  version       Int      @id @default(autoincrement())
+  weights       Json
+  referenceLpcd Int
+  isActive      Boolean  @default(false)
+  createdById   String?
+  createdAt     DateTime @default(now())
+}
+
+// ───────── الدفعات والإشعارات ─────────
+model Delivery {
+  id           String         @id @default(uuid())
+  planId       String?
+  approvalId   String?
+  fromOrgId    String
+  toCampId     String
+  sentLiters   Int
+  receivedLiters Int?
+  sentAt       DateTime       @db.Date
+  executor     String
+  proofUrl     String?
+  status       DeliveryStatus @default(PENDING)
+  frozen       Boolean        @default(false)
+  decidedById  String?
+  decidedAt    DateTime?
+  decisionNote String?
+  createdById  String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  plan     WaterPlan?   @relation(fields: [planId], references: [id], onDelete: SetNull)
+  approval Approval?    @relation(fields: [approvalId], references: [id], onDelete: SetNull)
+  fromOrg  Organization @relation(fields: [fromOrgId], references: [id])
+  toCamp   Camp         @relation(fields: [toCampId], references: [id])
+
+  @@index([toCampId, status])
+  @@index([fromOrgId, status])
+  @@index([status, createdAt])
+}
+
+model Notification {
+  id         String    @id @default(uuid())
+  userId     String
+  type       String
+  title      String
+  body       String
+  deliveryId String?
+  createdAt  DateTime  @default(now())
+  readAt     DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@index([deliveryId, type])
+}
+
+// ───────── التبرع والمانحون والتدقيق ─────────
+model DonationLink {
+  id                  String           @id @default(uuid())
+  linkType            DonationLinkType
+  url                 String
+  whatsappNumber      String?
+  receivingEntityName String
+  description         String
+  isActive            Boolean          @default(false)
+  lastVerifiedAt      DateTime?
+  lastStatus          String?
+  updatedById         String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+}
+
+model Donor {
+  id             String   @id @default(uuid())
+  imageUrl       String
+  altText        String
+  consentGivenAt DateTime
+  consentSource  String
+  displayOrder   Int      @default(0)
+  isPublished    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([isPublished, displayOrder])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
