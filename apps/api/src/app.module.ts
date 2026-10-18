@@ -9,6 +9,7 @@ import { AuditModule } from './audit/audit.module';
 import { MailModule } from './mail/mail.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AuthModule } from './auth/auth.module';
+import { RegistrationsModule } from './registrations/registrations.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AuthModule } from './auth/auth.module';
     MailModule,
     NotificationsModule,
     AuthModule,
+    RegistrationsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
