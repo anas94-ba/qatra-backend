@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { RegistrationsModule } from './registrations/registrations.module';
 import { AdminModule } from './admin/admin.module';
 import { CampsModule } from './camps/camps.module';
+import { OrganizationsModule } from './organizations/organizations.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { CampsModule } from './camps/camps.module';
     RegistrationsModule,
     AdminModule,
     CampsModule,
+    OrganizationsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
