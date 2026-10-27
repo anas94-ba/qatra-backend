@@ -11,6 +11,10 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AuthModule } from './auth/auth.module';
 import { RegistrationsModule } from './registrations/registrations.module';
 import { AdminModule } from './admin/admin.module';
+import { CampsModule } from './camps/camps.module';
+import { OrganizationsModule } from './organizations/organizations.module';
+import { RecommendationsModule } from './recommendations/recommendations.module';
+import { ApprovalsModule } from './approvals/approvals.module';
 
 @Module({
   imports: [
@@ -25,6 +29,10 @@ import { AdminModule } from './admin/admin.module';
     AuthModule,
     RegistrationsModule,
     AdminModule,
+    CampsModule,
+    OrganizationsModule,
+    RecommendationsModule,
+    ApprovalsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
