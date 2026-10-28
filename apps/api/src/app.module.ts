@@ -15,6 +15,7 @@ import { CampsModule } from './camps/camps.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { RecommendationsModule } from './recommendations/recommendations.module';
 import { ApprovalsModule } from './approvals/approvals.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ApprovalsModule } from './approvals/approvals.module';
     OrganizationsModule,
     RecommendationsModule,
     ApprovalsModule,
+    StorageModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
