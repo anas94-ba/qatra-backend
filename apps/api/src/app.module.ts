@@ -17,6 +17,7 @@ import { RecommendationsModule } from './recommendations/recommendations.module'
 import { ApprovalsModule } from './approvals/approvals.module';
 import { StorageModule } from './storage/storage.module';
 import { DeliveriesModule } from './deliveries/deliveries.module';
+import { PublicModule } from './public/public.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { DeliveriesModule } from './deliveries/deliveries.module';
     ApprovalsModule,
     StorageModule,
     DeliveriesModule,
+    PublicModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
