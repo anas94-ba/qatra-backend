@@ -20,6 +20,7 @@ import { DeliveriesModule } from './deliveries/deliveries.module';
 import { PublicModule } from './public/public.module';
 import { DonationModule } from './donation/donation.module';
 import { DonorsModule } from './donors/donors.module';
+import { JobsModule } from './jobs/jobs.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { DonorsModule } from './donors/donors.module';
     PublicModule,
     DonationModule,
     DonorsModule,
+    JobsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
