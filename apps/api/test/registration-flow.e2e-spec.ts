@@ -60,6 +60,7 @@ describe('registration flow (e2e)', () => {
     const admin = await request(app.getHttpServer()).post('/api/auth/login').send({ email: adminEmail, password: pw }).expect(200);
     const auth = { Authorization: `Bearer ${admin.body.accessToken}` };
     const list = await request(app.getHttpServer()).get('/api/admin/registrations?status=PENDING').set(auth).expect(200);
+    expect(list.body.meta).toMatchObject({ page: 1, pageSize: 10 }); // الافتراضي 10 لكل صفحة
     const req = list.body.items.find((r: any) => r.email === email);
     expect(req).toBeDefined();
 

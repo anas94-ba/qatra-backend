@@ -1,6 +1,7 @@
 import { IsEmail, IsEnum, IsNumber, IsObject, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { EntityType, OrgType } from '@prisma/client';
+import { EntityType, OrgType, RequestStatus } from '@prisma/client';
+import { PaginationDto } from '../common/pagination';
 
 export class ResubmitDto {
   @IsString() @MinLength(2) @MaxLength(120) name: string;
@@ -30,4 +31,9 @@ export class DirectAccountDto {
   @IsString() @MinLength(2) contactName: string;
   @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value)) @IsEmail() email: string;
   @IsString() @Matches(/^\+?[0-9\s-]{7,20}$/) phone: string;
+}
+
+export class RegistrationQueryDto extends PaginationDto {
+  @IsOptional() @IsEnum(RequestStatus) status?: RequestStatus;
+  @IsOptional() @IsEnum(EntityType) entityType?: EntityType;
 }
