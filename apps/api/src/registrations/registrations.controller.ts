@@ -1,8 +1,8 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
-import { RequestStatus, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { AllowAnyState, CurrentUser, Roles } from '../common/decorators';
 import { AuthUser } from '../common/types';
-import { ApproveDto, DirectAccountDto, HoldDto, RejectDto, ResubmitDto } from './dto';
+import { ApproveDto, DirectAccountDto, HoldDto, RegistrationQueryDto, RejectDto, ResubmitDto } from './dto';
 import { RegistrationsService } from './registrations.service';
 
 /** صفحات حالة الطلب للمتقدم (قيد الاعتماد / مرفوض): للاطلاع وإعادة التقديم فقط */
@@ -23,8 +23,8 @@ export class AdminRegistrationsController {
   constructor(private svc: RegistrationsService) {}
 
   @Get('registrations')
-  list(@Query('status') status?: RequestStatus, @Query('entityType') entityType?: string, @Query('page') page?: string, @Query('pageSize') pageSize?: string) {
-    return this.svc.list({ status, entityType, page: page ? +page : undefined, pageSize: pageSize ? +pageSize : undefined });
+  list(@Query() query: RegistrationQueryDto) {
+    return this.svc.list(query);
   }
 
   @Get('registrations/:id')

@@ -3,12 +3,11 @@ import { DeliveryStatus, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { AuthUser } from '../common/types';
 import { diffDays, formatDateOnly, isValidDateString, todayInGaza, toDateOnly } from '../common/gaza-date';
+import { mapPage, paginate } from '../common/pagination';
 import { sanitizeText, toCsv } from '../common/text';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { ConfirmDeliveryDto, CorrectDeliveryDto, CreateDeliveryDto, UpdateDeliveryDto } from './dto';
-
-export interface DeliveryQuery { status?: DeliveryStatus; from?: string; to?: string; counterpartyId?: string; orgType?: string; disputed?: string; page?: number; pageSize?: number }
+import { ConfirmDeliveryDto, CorrectDeliveryDto, CreateDeliveryDto, DeliveryQueryDto, UpdateDeliveryDto } from './dto';
 
 const FULL = { fromOrg: { select: { id: true, name: true, orgType: true } }, toCamp: { select: { id: true, name: true, region: true } }, plan: { select: { id: true, name: true } } } as const;
 type Full = Prisma.DeliveryGetPayload<{ include: typeof FULL }>;
@@ -136,49 +135,61 @@ export class DeliveriesService {
   }
 
   // ───────── السجلات (واردة/صادرة) ─────────
-  private where(q: DeliveryQuery, base: Prisma.DeliveryWhereInput): Prisma.DeliveryWhereInput {
+  private static readonly CSV_LIMIT = 5000;
+
+  private filters(q: DeliveryQueryDto, base: Prisma.DeliveryWhereInput): Prisma.DeliveryWhereInput {
     return {
       ...base,
-      status: q.status || undefined,
-      sentAt: { gte: q.from && isValidDateString(q.from) ? toDateOnly(q.from) : undefined, lte: q.to && isValidDateString(q.to) ? toDateOnly(q.to) : undefined },
+      status: q.status,
+      sentAt: { gte: q.from ? toDateOnly(q.from) : undefined, lte: q.to ? toDateOnly(q.to) : undefined },
     };
   }
 
-  private async page(where: Prisma.DeliveryWhereInput, q: DeliveryQuery, csv: boolean) {
-    const pageSize = csv ? 5000 : Math.min(100, Math.max(1, q.pageSize ?? 25));
-    const page = Math.max(1, q.page ?? 1);
-    const [rows, total] = await this.prisma.$transaction([
-      this.prisma.delivery.findMany({ where, include: FULL, orderBy: [{ sentAt: 'desc' }, { createdAt: 'desc' }], skip: csv ? 0 : (page - 1) * pageSize, take: pageSize }),
-      this.prisma.delivery.count({ where }),
-    ]);
-    return { items: rows.map(view), total, page, pageSize };
+  private outgoingWhere(u: AuthUser, q: DeliveryQueryDto) {
+    // لا ترى المؤسسة إلا دفعاتها (TC61)
+    return this.filters(q, { fromOrgId: this.orgId(u), toCampId: q.counterpartyId });
   }
 
-  async outgoing(u: AuthUser, q: DeliveryQuery, csv = false) {
-    const where = this.where(q, { fromOrgId: this.orgId(u), toCampId: q.counterpartyId || undefined }); // لا ترى إلا دفعاتها (TC61)
-    return this.maybeCsv(await this.page(where, q, csv), csv, 'out');
-  }
-  async incoming(u: AuthUser, q: DeliveryQuery, csv = false) {
-    const where = this.where(q, { toCampId: this.campId(u), fromOrgId: q.counterpartyId || undefined });
-    return this.maybeCsv(await this.page(where, q, csv), csv, 'in');
+  private incomingWhere(u: AuthUser, q: DeliveryQueryDto) {
+    return this.filters(q, { toCampId: this.campId(u), fromOrgId: q.counterpartyId });
   }
 
-  private maybeCsv(res: Awaited<ReturnType<DeliveriesService['page']>>, csv: boolean, dir: 'in' | 'out') {
-    if (!csv) return res;
-    return toCsv(res.items.map((d) => ({
-      'التاريخ': d.sentAt, 'الحالة': d.status, [dir === 'out' ? 'المخيم' : 'المؤسسة']: dir === 'out' ? d.to.name : d.from.name, 'نوع الجهة': d.from.orgType,
-      'المرسل (لتر)': d.sentLiters, 'المستلم (لتر)': d.receivedLiters ?? '', 'الجهة المنفذة': d.executor, 'ملاحظة': d.decisionNote ?? '',
+  private async list(where: Prisma.DeliveryWhereInput, q: DeliveryQueryDto) {
+    const page = await paginate(
+      this.prisma,
+      q,
+      (window) => this.prisma.delivery.findMany({ where, include: FULL, orderBy: [{ sentAt: 'desc' }, { createdAt: 'desc' }], ...window }),
+      () => this.prisma.delivery.count({ where }),
+    );
+    return mapPage(page, view);
+  }
+
+  outgoing(u: AuthUser, q: DeliveryQueryDto) { return this.list(this.outgoingWhere(u, q), q); }
+  incoming(u: AuthUser, q: DeliveryQueryDto) { return this.list(this.incomingWhere(u, q), q); }
+
+  /** التصدير يتجاهل الصفحات ويعيد حتى CSV_LIMIT صفًا */
+  async exportCsv(u: AuthUser, q: DeliveryQueryDto, direction: 'in' | 'out') {
+    const where = direction === 'out' ? this.outgoingWhere(u, q) : this.incomingWhere(u, q);
+    const rows = await this.prisma.delivery.findMany({ where, include: FULL, orderBy: { sentAt: 'desc' }, take: DeliveriesService.CSV_LIMIT });
+    return toCsv(rows.map(view).map((d) => ({
+      'التاريخ': d.sentAt,
+      'الحالة': d.status,
+      [direction === 'out' ? 'المخيم' : 'المؤسسة']: direction === 'out' ? d.to.name : d.from.name,
+      'نوع الجهة': d.from.orgType,
+      'المرسل (لتر)': d.sentLiters,
+      'المستلم (لتر)': d.receivedLiters ?? '',
+      'الجهة المنفذة': d.executor,
+      'ملاحظة': d.decisionNote ?? '',
     })));
   }
 
-  // ───────── الأدمن ─────────
-  async adminList(q: DeliveryQuery) {
+  adminList(q: DeliveryQueryDto) {
     const where: Prisma.DeliveryWhereInput = {
-      ...this.where(q, {}),
-      ...(q.disputed === 'true' ? { status: { in: ['CONFIRMED_DIFF', 'REJECTED'] } } : {}),
-      fromOrg: q.orgType ? { orgType: q.orgType as any } : undefined, // فلتر النوع (I3)
+      ...this.filters(q, {}),
+      ...(q.disputed ? { status: { in: ['CONFIRMED_DIFF', 'REJECTED'] } } : {}),
+      fromOrg: q.orgType ? { orgType: q.orgType } : undefined, // فلتر النوع (I3)
     };
-    return this.page(where, q, false);
+    return this.list(where, q);
   }
 
   /** تصحيح دفعة متنازع عليها مع سبب في AuditLog (TC64) */

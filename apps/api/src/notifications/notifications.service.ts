@@ -1,5 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Notification } from '@prisma/client';
+import { Paginated, paginate } from '../common/pagination';
 import { Db, PrismaService } from '../prisma/prisma.service';
+import { NotificationsQueryDto } from './dto';
 
 export interface NotificationInput {
   type: string;
@@ -26,17 +29,14 @@ export class NotificationsService {
   orgUserIds(organizationId: string, db: Db = this.prisma) { return this.ids({ organizationId }, db); }
   adminIds(db: Db = this.prisma) { return this.ids({ role: 'ADMIN' }, db); }
 
-  async list(userId: string, q: { unread?: boolean; limit?: number; cursor?: string }) {
-    const take = Math.min(50, Math.max(1, q.limit ?? 20));
-    const items = await this.prisma.notification.findMany({
-      where: { userId, readAt: q.unread ? null : undefined },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take: take + 1,
-      ...(q.cursor ? { cursor: { id: q.cursor }, skip: 1 } : {}),
-    });
-    const hasMore = items.length > take;
-    const page = hasMore ? items.slice(0, take) : items;
-    return { items: page, nextCursor: hasMore ? page[page.length - 1].id : null };
+  list(userId: string, q: NotificationsQueryDto): Promise<Paginated<Notification>> {
+    const where = { userId, readAt: q.unread ? null : undefined };
+    return paginate(
+      this.prisma,
+      q,
+      (window) => this.prisma.notification.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], ...window }),
+      () => this.prisma.notification.count({ where }),
+    );
   }
 
   unreadCount(userId: string) {
