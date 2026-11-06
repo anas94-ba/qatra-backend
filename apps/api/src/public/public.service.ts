@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { addDays, diffDays, formatDateOnly, todayInGaza, toDateOnly } from '../common/gaza-date';
+import { diffDays, formatDateOnly, todayInGaza, toDateOnly } from '../common/gaza-date';
 import { roundCoord } from '../common/geo';
 import { PrismaService } from '../prisma/prisma.service';
 

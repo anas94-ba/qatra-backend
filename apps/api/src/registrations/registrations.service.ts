@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { OrgType, Prisma, RequestStatus, Role } from '@prisma/client';
+import { OrgType, Prisma, Role } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { AuditService } from '../audit/audit.service';
@@ -7,12 +7,13 @@ import { addHours, newToken, sha256 } from '../auth/tokens';
 import { attemptsRemaining } from '../auth/landing';
 import { validateRegistrationInput } from '../auth/registration-input';
 import { inGaza } from '../common/geo';
+import { paginate } from '../common/pagination';
 import { sanitizeText } from '../common/text';
 import { MailService } from '../mail/mail.service';
 import { templates } from '../mail/mail.templates';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { DirectAccountDto, ResubmitDto } from './dto';
+import { DirectAccountDto, RegistrationQueryDto, ResubmitDto } from './dto';
 
 const COORD_EPS = 0.005; // ≈ 500 م
 
@@ -50,21 +51,21 @@ export class RegistrationsService {
   }
 
   // ───────── الأدمن: الطابور ─────────
-  async list(q: { status?: RequestStatus; entityType?: string; page?: number; pageSize?: number }) {
-    const page = Math.max(1, q.page ?? 1);
-    const pageSize = Math.min(100, Math.max(1, q.pageSize ?? 25));
+  async list(q: RegistrationQueryDto) {
     // لا يدخل الطابور طلب لم يؤكد صاحبه بريده (TC118)
     const where: Prisma.RegistrationRequestWhereInput = {
       user: { emailVerifiedAt: { not: null } },
-      status: q.status || undefined,
-      entityType: (q.entityType as any) || undefined,
+      status: q.status,
+      entityType: q.entityType,
     };
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.registrationRequest.findMany({ where, orderBy: { createdAt: 'asc' }, skip: (page - 1) * pageSize, take: pageSize }),
-      this.prisma.registrationRequest.count({ where }),
-    ]);
-    const withDup = await Promise.all(items.map(async (r) => ({ ...r, duplicates: r.status === 'PENDING' ? await this.findDuplicates(r) : [] })));
-    return { items: withDup, total, page, pageSize };
+    const page = await paginate(
+      this.prisma,
+      q,
+      (window) => this.prisma.registrationRequest.findMany({ where, orderBy: { createdAt: 'asc' }, ...window }),
+      () => this.prisma.registrationRequest.count({ where }),
+    );
+    const items = await Promise.all(page.items.map(async (r) => ({ ...r, duplicates: r.status === 'PENDING' ? await this.findDuplicates(r) : [] })));
+    return { items, meta: page.meta };
   }
 
   async get(id: string) {

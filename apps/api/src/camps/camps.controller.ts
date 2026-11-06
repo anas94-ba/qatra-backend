@@ -1,10 +1,11 @@
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { CurrentUser, Roles } from '../common/decorators';
+import { PaginationDto } from '../common/pagination';
 import { AuthUser } from '../common/types';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CampsService } from './camps.service';
-import { CreateCampDto, CreateSnapshotDto, ReviewSnapshotDto, UpdateCampDto, UpdateOwnCampDto } from './dto';
+import { CampsQueryDto, CreateCampDto, CreateSnapshotDto, ReviewSnapshotDto, SnapshotsQueryDto, UpdateCampDto, UpdateOwnCampDto } from './dto';
 
 @Roles(Role.CAMP_REP)
 @Controller('camp')
@@ -21,7 +22,7 @@ export class CampController {
     await this.notifications.notify(await this.notifications.adminIds(), { type: 'SNAPSHOT_SUBMITTED', title: 'Snapshot جديد للمراجعة', body: 'أرسل مخيم بيانات جديدة بانتظار الاعتماد.' });
     return snap;
   }
-  @Get('snapshots') snapshots(@CurrentUser() u: AuthUser) { return this.svc.listOwnSnapshots(u); }
+  @Get('snapshots') snapshots(@CurrentUser() u: AuthUser, @Query() query: PaginationDto) { return this.svc.listOwnSnapshots(u, query); }
 }
 
 @Roles(Role.ADMIN)
@@ -30,11 +31,11 @@ export class AdminCampsController {
   constructor(private svc: CampsService, private notifications: NotificationsService) {}
 
   @Post('camps') create(@CurrentUser() u: AuthUser, @Body() dto: CreateCampDto) { return this.svc.create(u.id, dto); }
-  @Get('camps') list(@Query('status') status?: 'ACTIVE' | 'SUSPENDED', @Query('region') region?: string, @Query('q') q?: string) { return this.svc.list({ status, region, q }); }
+  @Get('camps') list(@Query() query: CampsQueryDto) { return this.svc.list(query); }
   @Patch('camps/:id') update(@CurrentUser() u: AuthUser, @Param('id') id: string, @Body() dto: UpdateCampDto) { return this.svc.update(u.id, id, dto); }
 
   @Get('snapshots')
-  snapshots(@Query('reviewStatus') reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED', @Query('campId') campId?: string) { return this.svc.adminListSnapshots({ reviewStatus, campId }); }
+  snapshots(@Query() query: SnapshotsQueryDto) { return this.svc.adminListSnapshots(query); }
 
   private notify = async (campId: string, ok: boolean, reason?: string) =>
     this.notifications.notify(await this.notifications.campUserIds(campId), {
