@@ -1,4 +1,7 @@
-import { IsIn, IsInt, IsOptional, IsString, IsUrl, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { DeliveryStatus, OrgType } from '@prisma/client';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsEnum, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { PaginationDto } from '../common/pagination';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -27,4 +30,14 @@ export class CorrectDeliveryDto {
   @IsOptional() @IsInt() @Min(0) receivedLiters?: number;
   @IsOptional() @IsIn(['CONFIRMED', 'CONFIRMED_DIFF', 'REJECTED', 'CANCELLED']) status?: string;
   @IsString({ message: 'سبب التصحيح إلزامي' }) @MinLength(3) @MaxLength(1000) reason: string;
+}
+
+/** فلاتر السجلات (واردة/صادرة/أدمن). `counterpartyId` هو الطرف الآخر: المخيم للمؤسسة، والمؤسسة للمخيم. */
+export class DeliveryQueryDto extends PaginationDto {
+  @IsOptional() @IsEnum(DeliveryStatus) status?: DeliveryStatus;
+  @IsOptional() @Matches(DATE) from?: string;
+  @IsOptional() @Matches(DATE) to?: string;
+  @IsOptional() @IsString() counterpartyId?: string;
+  @IsOptional() @IsEnum(OrgType) orgType?: OrgType;
+  @IsOptional() @Transform(({ value }) => value === true || value === 'true') @IsBoolean() disputed?: boolean;
 }

@@ -44,6 +44,14 @@ npm run test:e2e -w @qatra/api    # تكامل: يحتاج DATABASE_URL لقاع
 
 الوجهة بعد الدخول (`landing`): `EMAIL_VERIFY | PENDING | REJECTED | DASHBOARD | SUSPENDED`، ويُفحص وضع المستخدم والجهة **عند كل طلب** في الخادم.
 
+## الـ Pagination
+كل القوائم تقبل `?page=1&pageSize=10` (الافتراضي **10**، الحد الأقصى 100) وترجع الشكل نفسه:
+```json
+{ "items": [], "meta": { "total": 0, "page": 1, "pageSize": 10, "totalPages": 1, "hasNext": false, "hasPrev": false } }
+```
+الـ interface في `apps/api/src/common/pagination.ts` (`PaginationDto` يُورَّث في DTO كل قائمة، و`paginate()` تقرأ الصفحة والعدد في معاملة واحدة).
+فلتر الطرف الآخر في سجلات الدفعات اسمه `counterpartyId` (المخيم للمؤسسة، والمؤسسة للمخيم). تصدير CSV يتجاهل الصفحات (حتى 5000 صف).
+
 ## قواعد مهمة
 - بداية الحملة اليوم أو بعده بتوقيت `Asia/Gaza` (محسوبة في الخادم)، وتاريخ الدفعة ليس في المستقبل.
 - نوع الجهة (محلية/دولية/مبادرة) لا يدخل في حساب الأولوية.
