@@ -1,5 +1,6 @@
-import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsISO8601, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { EntityStatus, ReviewStatus } from '@prisma/client';
+import { IsBoolean, IsEnum, IsInt, IsISO8601, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { PaginationDto } from '../common/pagination';
 
 export class CreateCampDto {
   @IsString() @MinLength(2) @MaxLength(120) name: string;
@@ -36,4 +37,14 @@ export class CreateSnapshotDto {
 }
 export class ReviewSnapshotDto {
   @IsOptional() @IsString() @MaxLength(1000) reason?: string;
+}
+
+export class CampsQueryDto extends PaginationDto {
+  @IsOptional() @IsEnum(EntityStatus) status?: EntityStatus;
+  @IsOptional() @IsString() region?: string;
+  @IsOptional() @IsString() q?: string;
+}
+export class SnapshotsQueryDto extends PaginationDto {
+  @IsOptional() @IsEnum(ReviewStatus) reviewStatus?: ReviewStatus;
+  @IsOptional() @IsString() campId?: string;
 }

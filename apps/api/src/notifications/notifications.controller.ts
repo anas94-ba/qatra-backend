@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators';
 import { AuthUser } from '../common/types';
+import { NotificationsQueryDto } from './dto';
 import { NotificationsService } from './notifications.service';
 
 /** الإشعارات بالجلب (polling) وليست لحظية: الواجهة تطلبها عند الفتح وكل 2–5 دقائق */
@@ -9,8 +10,8 @@ export class NotificationsController {
   constructor(private svc: NotificationsService) {}
 
   @Get()
-  list(@CurrentUser() u: AuthUser, @Query('unread') unread?: string, @Query('limit') limit?: string, @Query('cursor') cursor?: string) {
-    return this.svc.list(u.id, { unread: unread === 'true', limit: limit ? +limit : undefined, cursor });
+  list(@CurrentUser() u: AuthUser, @Query() query: NotificationsQueryDto) {
+    return this.svc.list(u.id, query);
   }
 
   @Get('unread-count')

@@ -1,5 +1,6 @@
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsEnum, IsIn, IsInt, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
-import { OrgType, PlanStatus } from '@prisma/client';
+import { EntityStatus, OrgType, PlanStatus } from '@prisma/client';
+import { PaginationDto } from '../common/pagination';
 
 export class UpdateOrgDto {
   @IsOptional() @IsString() @MaxLength(2000) description?: string;
@@ -32,3 +33,8 @@ export class UpdatePlanDto {
   @IsOptional() @IsObject() constraints?: Record<string, unknown>;
 }
 export class TransitionDto { @IsIn(['APPROVED', 'IN_PROGRESS', 'COMPLETED']) to: PlanStatus; }
+
+export class OrgsQueryDto extends PaginationDto {
+  @IsOptional() @IsEnum(OrgType) orgType?: OrgType;
+  @IsOptional() @IsEnum(EntityStatus) status?: EntityStatus;
+}

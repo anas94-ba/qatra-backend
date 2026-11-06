@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import sharp from 'sharp';
 import { AuditService } from '../audit/audit.service';
 import { detectFileType } from '../common/file-type';
+import { PaginationDto, paginate } from '../common/pagination';
 import { escapeHtml, sanitizeText } from '../common/text';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
@@ -12,7 +13,14 @@ import { CreateDonorDto, UpdateDonorDto } from './dto';
 export class DonorsService {
   constructor(private prisma: PrismaService, private audit: AuditService, private storage: StorageService) {}
 
-  list() { return this.prisma.donor.findMany({ orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }] }); }
+  list(q: PaginationDto) {
+    return paginate(
+      this.prisma,
+      q,
+      (window) => this.prisma.donor.findMany({ orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }], ...window }),
+      () => this.prisma.donor.count(),
+    );
+  }
 
   /** WebP/JPG/PNG فقط (لا SVG)، تُحوَّل إلى WebP بحجم موحد، والموافقة وتاريخها والنص البديل إلزامية (TC78، TC81) */
   async create(adminId: string, file: Express.Multer.File | undefined, dto: CreateDonorDto) {
