@@ -3,6 +3,7 @@ import { Prisma, PlanStatus } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { AuthUser } from '../common/types';
 import { addDays, formatDateOnly, isValidDateString, todayInGaza, toDateOnly } from '../common/gaza-date';
+import { PaginationDto, paginate } from '../common/pagination';
 import { sanitizeText } from '../common/text';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePlanDto, UpdatePlanDto } from './dto';
@@ -122,8 +123,14 @@ export class PlansService {
     return after;
   }
 
-  list(u: AuthUser) {
-    return this.prisma.waterPlan.findMany({ where: { orgId: this.orgId(u) }, orderBy: { createdAt: 'desc' }, include: { _count: { select: { planCamps: true } } } });
+  list(u: AuthUser, q: PaginationDto) {
+    const where: Prisma.WaterPlanWhereInput = { orgId: this.orgId(u) };
+    return paginate(
+      this.prisma,
+      q,
+      (window) => this.prisma.waterPlan.findMany({ where, orderBy: { createdAt: 'desc' }, include: { _count: { select: { planCamps: true } } }, ...window }),
+      () => this.prisma.waterPlan.count({ where }),
+    );
   }
 
   async get(u: AuthUser, id: string) {

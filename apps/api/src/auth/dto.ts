@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { Equals, IsEmail, IsEnum, IsIn, IsNumber, IsObject, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { Equals, IsEmail, IsEnum, IsNumber, IsObject, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import { EntityType } from '@prisma/client';
 
 const lower = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value);

@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Role } from '@prisma/client';
 import { memoryStorage } from 'multer';
 import { CurrentUser, Roles } from '../common/decorators';
+import { PaginationDto } from '../common/pagination';
 import { AuthUser } from '../common/types';
 import { CreateDonorDto, UpdateDonorDto } from './dto';
 import { DonorsService } from './donors.service';
@@ -12,7 +13,7 @@ import { DonorsService } from './donors.service';
 export class DonorsController {
   constructor(private svc: DonorsService) {}
 
-  @Get() list() { return this.svc.list(); }
+  @Get() list(@Query() query: PaginationDto) { return this.svc.list(query); }
 
   @Post()
   @UseInterceptors(FileInterceptor('image', { storage: memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1 } }))

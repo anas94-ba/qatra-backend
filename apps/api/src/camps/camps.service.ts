@@ -3,9 +3,10 @@ import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { AuthUser } from '../common/types';
 import { inGaza } from '../common/geo';
+import { PaginationDto, paginate } from '../common/pagination';
 import { sanitizeText } from '../common/text';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateCampDto, CreateSnapshotDto, UpdateCampDto, UpdateOwnCampDto } from './dto';
+import { CampsQueryDto, CreateCampDto, CreateSnapshotDto, SnapshotsQueryDto, UpdateCampDto, UpdateOwnCampDto } from './dto';
 
 @Injectable()
 export class CampsService {
@@ -39,11 +40,19 @@ export class CampsService {
     return after;
   }
 
-  list(q: { status?: 'ACTIVE' | 'SUSPENDED'; region?: string; q?: string }) {
-    return this.prisma.camp.findMany({
-      where: { deletedAt: null, status: q.status || undefined, region: q.region || undefined, name: q.q ? { contains: q.q, mode: 'insensitive' } : undefined },
-      orderBy: { name: 'asc' },
-    });
+  list(q: CampsQueryDto) {
+    const where: Prisma.CampWhereInput = {
+      deletedAt: null,
+      status: q.status,
+      region: q.region || undefined,
+      name: q.q ? { contains: q.q, mode: 'insensitive' } : undefined,
+    };
+    return paginate(
+      this.prisma,
+      q,
+      (window) => this.prisma.camp.findMany({ where, orderBy: { name: 'asc' }, ...window }),
+      () => this.prisma.camp.count({ where }),
+    );
   }
 
   // ───────── مدير المخيم ─────────
@@ -90,17 +99,24 @@ export class CampsService {
     return snap;
   }
 
-  listOwnSnapshots(u: AuthUser) {
-    return this.prisma.campSnapshot.findMany({ where: { campId: this.campIdOf(u) }, orderBy: { reportedAt: 'desc' }, take: 100 });
+  listOwnSnapshots(u: AuthUser, q: PaginationDto) {
+    const where: Prisma.CampSnapshotWhereInput = { campId: this.campIdOf(u) };
+    return paginate(
+      this.prisma,
+      q,
+      (window) => this.prisma.campSnapshot.findMany({ where, orderBy: { reportedAt: 'desc' }, ...window }),
+      () => this.prisma.campSnapshot.count({ where }),
+    );
   }
 
-  adminListSnapshots(q: { reviewStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'; campId?: string }) {
-    return this.prisma.campSnapshot.findMany({
-      where: { reviewStatus: q.reviewStatus || undefined, campId: q.campId || undefined },
-      include: { camp: { select: { id: true, name: true, region: true } } },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-    });
+  adminListSnapshots(q: SnapshotsQueryDto) {
+    const where: Prisma.CampSnapshotWhereInput = { reviewStatus: q.reviewStatus, campId: q.campId || undefined };
+    return paginate(
+      this.prisma,
+      q,
+      (window) => this.prisma.campSnapshot.findMany({ where, include: { camp: { select: { id: true, name: true, region: true } } }, orderBy: { createdAt: 'desc' }, ...window }),
+      () => this.prisma.campSnapshot.count({ where }),
+    );
   }
 
   async review(adminId: string, id: string, approve: boolean, reason?: string, notify?: (campId: string, ok: boolean, reason?: string) => Promise<void>) {

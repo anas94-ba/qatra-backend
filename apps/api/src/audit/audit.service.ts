@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { AuditLog, Prisma } from '@prisma/client';
+import { Paginated, paginate } from '../common/pagination';
 import { Db, PrismaService } from '../prisma/prisma.service';
+import { AuditQueryDto } from './dto';
 
 export interface AuditEntry {
   userId?: string | null;
@@ -37,9 +39,7 @@ export class AuditService {
     });
   }
 
-  async list(q: { entity?: string; entityId?: string; userId?: string; action?: string; from?: string; to?: string; page?: number; pageSize?: number }) {
-    const page = Math.max(1, q.page ?? 1);
-    const pageSize = Math.min(100, Math.max(1, q.pageSize ?? 50));
+  list(q: AuditQueryDto): Promise<Paginated<AuditLog>> {
     const where: Prisma.AuditLogWhereInput = {
       entity: q.entity || undefined,
       entityId: q.entityId || undefined,
@@ -47,10 +47,11 @@ export class AuditService {
       action: q.action || undefined,
       createdAt: { gte: q.from ? new Date(q.from) : undefined, lte: q.to ? new Date(q.to) : undefined },
     };
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.auditLog.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
-      this.prisma.auditLog.count({ where }),
-    ]);
-    return { items, total, page, pageSize };
+    return paginate(
+      this.prisma,
+      q,
+      (window) => this.prisma.auditLog.findMany({ where, orderBy: { createdAt: 'desc' }, ...window }),
+      () => this.prisma.auditLog.count({ where }),
+    );
   }
 }
