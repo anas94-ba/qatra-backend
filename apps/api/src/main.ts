@@ -1,12 +1,13 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { env } from './config/env';
+import { SWAGGER_PATH, setupSwagger } from './swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
@@ -19,6 +20,8 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   if (!process.env.S3_BUCKET) app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/files' });
   app.enableShutdownHooks();
+  setupSwagger(app);
   await app.listen(env.port);
+  Logger.log(`API docs: http://localhost:${env.port}/${SWAGGER_PATH}`, 'Bootstrap');
 }
 bootstrap();
