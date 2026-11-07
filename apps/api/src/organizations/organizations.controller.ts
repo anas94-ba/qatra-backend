@@ -4,6 +4,7 @@ import { Prisma, Role } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUser, Roles } from '../common/decorators';
 import { PaginationDto, paginate } from '../common/pagination';
+import { CampsQueryDto } from '../camps/dto';
 import { AuthUser } from '../common/types';
 import { sanitizeText } from '../common/text';
 import { PrismaService } from '../prisma/prisma.service';
@@ -32,6 +33,23 @@ export class OrgController {
     });
     await this.audit.log({ userId: u.id, action: 'UPDATE', entity: 'Organization', entityId: after.id, before, after });
     return after;
+  }
+
+  /** Active camps an organization can target in a plan (minimal fields only) */
+  @Get('camps')
+  camps(@Query() q: CampsQueryDto) {
+    const where: Prisma.CampWhereInput = {
+      deletedAt: null,
+      status: 'ACTIVE',
+      region: q.region || undefined,
+      name: q.q ? { contains: q.q, mode: 'insensitive' } : undefined,
+    };
+    return paginate(
+      this.prisma,
+      q,
+      (window) => this.prisma.camp.findMany({ where, select: { id: true, name: true, region: true }, orderBy: { name: 'asc' }, ...window }),
+      () => this.prisma.camp.count({ where }),
+    );
   }
 
   @Post('plans') create(@CurrentUser() u: AuthUser, @Body() dto: CreatePlanDto) { return this.plans.create(u, dto); }
