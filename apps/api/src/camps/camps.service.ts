@@ -16,7 +16,7 @@ export class CampsService {
     if (!inGaza(lat, lng)) throw new BadRequestException('الإحداثيات خارج نطاق قطاع غزة');
   }
 
-  // ───────── الأدمن ─────────
+  // ───────── Admin ─────────
   async create(adminId: string, dto: CreateCampDto) {
     this.checkCoords(dto.lat, dto.lng);
     const name = sanitizeText(dto.name);
@@ -55,7 +55,7 @@ export class CampsService {
     );
   }
 
-  // ───────── مدير المخيم ─────────
+  // ───────── Camp manager ─────────
   private campIdOf(u: AuthUser) {
     if (!u.campId) throw new ForbiddenException('الحساب غير مرتبط بمخيم');
     return u.campId;
@@ -78,7 +78,7 @@ export class CampsService {
   }
 
   // ───────── Snapshots ─────────
-  /** Snapshot جديد يبدأ PENDING ولا يدخل حساب الخوارزمية قبل اعتماد الأدمن (TC35) */
+  /** A new Snapshot starts as PENDING and is not used by the algorithm until the admin approves it (TC35) */
   async createSnapshot(u: AuthUser, dto: CreateSnapshotDto) {
     const campId = this.campIdOf(u);
     const errors: string[] = [];

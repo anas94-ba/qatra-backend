@@ -2,11 +2,11 @@ import { createParamDecorator, ExecutionContext, SetMetadata } from '@nestjs/com
 import type { Role } from '@prisma/client';
 
 export const IS_PUBLIC = 'isPublic';
-/** مسار بلا مصادقة (الصفحات العامة، التسجيل، الدخول) */
+/** Route without authentication (public pages, registration, login) */
 export const Public = () => SetMetadata(IS_PUBLIC, true);
 
 export const ALLOW_ANY_STATE = 'allowAnyState';
-/** مسار متاح لأي حالة حساب (صفحات الحالة، me، تغيير كلمة المرور) */
+/** Route available in any account state (status pages, me, change password) */
 export const AllowAnyState = () => SetMetadata(ALLOW_ANY_STATE, true);
 
 export const ROLES = 'roles';

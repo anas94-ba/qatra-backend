@@ -6,7 +6,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { MailService } from '../src/mail/mail.service';
 
-/** تدفق التسجيل الأساسي (TC100، TC06، TC08، TC105–107، TC117). يتطلب DATABASE_URL لقاعدة اختبار مهاجَرة. */
+/** Core registration flow (TC100, TC06, TC08, TC105–107, TC117). Requires DATABASE_URL pointing to a migrated test database. */
 describe('registration flow (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaClient;
@@ -32,27 +32,27 @@ describe('registration flow (e2e)', () => {
 
   const body = { entityType: 'CAMP', name: `مخيم e2e ${Date.now()}`, region: 'غزة', lat: 31.4, lng: 34.35, contactName: 'مسؤول', email, phone: '+970599000000', password: pw, passwordConfirm: pw, privacyAccepted: true, details: { families: 10, population: 50, repTitle: 'مدير' } };
 
-  it('التسجيل يتجاهل role/status ويُنشئ طلبًا PENDING', async () => {
+  it('registration ignores role/status and creates a PENDING request', async () => {
     await request(app.getHttpServer()).post('/api/auth/register').send({ ...body, role: 'ADMIN', status: 'APPROVED' }).expect(201);
     const user = await prisma.user.findUnique({ where: { email }, include: { registrationRequest: true } });
     expect(user.role).toBe('CAMP_REP');
     expect(user.registrationRequest.status).toBe('PENDING');
   });
 
-  it('بريد مكرر يُرفض (TC02)', async () => {
+  it('duplicate email is rejected (TC02)', async () => {
     await request(app.getHttpServer()).post('/api/auth/register').send(body).expect(409);
   });
 
-  it('الدخول قبل التأكيد: EMAIL_VERIFY وكل وظيفة محظورة (TC08، TC106)', async () => {
+  it('login before verification: EMAIL_VERIFY and every function is blocked (TC08, TC106)', async () => {
     const res = await request(app.getHttpServer()).post('/api/auth/login').send({ email, password: pw }).expect(200);
     expect(res.body.landing).toBe('EMAIL_VERIFY');
     await request(app.getHttpServer()).get('/api/camp/deliveries').set('Authorization', `Bearer ${res.body.accessToken}`).expect(403);
   });
 
-  it('بعد تأكيد البريد: PENDING ويدخل طابور الأدمن، ثم القبول بنقرتين ينشئ كيانًا واحدًا (TC117)', async () => {
+  it('after verification: PENDING and enters the admin queue; approving with a double click creates a single entity (TC117)', async () => {
     const token = /token=([a-f0-9]+)/.exec(sent.find((s) => s.to === email).html)[1];
     await request(app.getHttpServer()).post('/api/auth/verify-email').send({ token }).expect(200);
-    await request(app.getHttpServer()).post('/api/auth/verify-email').send({ token }).expect(400); // رابط لمرة واحدة
+    await request(app.getHttpServer()).post('/api/auth/verify-email').send({ token }).expect(400); // single-use link
 
     const login = await request(app.getHttpServer()).post('/api/auth/login').send({ email, password: pw }).expect(200);
     expect(login.body.landing).toBe('PENDING');
@@ -60,7 +60,7 @@ describe('registration flow (e2e)', () => {
     const admin = await request(app.getHttpServer()).post('/api/auth/login').send({ email: adminEmail, password: pw }).expect(200);
     const auth = { Authorization: `Bearer ${admin.body.accessToken}` };
     const list = await request(app.getHttpServer()).get('/api/admin/registrations?status=PENDING').set(auth).expect(200);
-    expect(list.body.meta).toMatchObject({ page: 1, pageSize: 10 }); // الافتراضي 10 لكل صفحة
+    expect(list.body.meta).toMatchObject({ page: 1, pageSize: 10 }); // default is 10 per page
     const req = list.body.items.find((r: any) => r.email === email);
     expect(req).toBeDefined();
 
@@ -75,7 +75,7 @@ describe('registration flow (e2e)', () => {
     expect(again.body.landing).toBe('DASHBOARD');
   });
 
-  it('endpoint محمي بدون Token → 401 (TC22)، والعام يعمل (TC20)', async () => {
+  it('protected endpoint without a token -> 401 (TC22); public endpoint works (TC20)', async () => {
     await request(app.getHttpServer()).get('/api/notifications').expect(401);
     await request(app.getHttpServer()).get('/api/public/stats').expect(200);
   });

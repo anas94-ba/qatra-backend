@@ -1,7 +1,7 @@
 /**
  * Seed:
- *  - دائمًا: أدمن أول + نسخة الخوارزمية الأولى (الأوزان الأولية غير معتمدة إنسانيًا وتحتاج مراجعة مختص WASH)
- *  - SEED_DEMO=true (Staging/تطوير فقط): بيانات وهمية بالكامل، وبريد @demo.test، ولا بيانات حقيقية
+ *  - Always: first admin + first algorithm config (the initial weights are not approved humanitarian standards and need review by a WASH specialist)
+ *  - SEED_DEMO=true (staging/development only): fully fake data, @demo.test emails, no real data
  */
 import { PrismaClient, Role } from '@prisma/client';
 import * as argon2 from 'argon2';
@@ -33,7 +33,7 @@ async function seedDemo() {
   const admin = await prisma.user.findFirstOrThrow({ where: { role: 'ADMIN' } });
   const verified = new Date();
 
-  // ───── مخيمات وهمية ─────
+  // ───── Fake camps ─────
   const campDefs = [
     { name: 'مخيم تجريبي 1', region: 'غزة', lat: 31.52, lng: 34.45, pop: 4200, fam: 800, kids: 1800, dis: 160, other: 30000, last: 9 },
     { name: 'مخيم تجريبي 2', region: 'الوسطى', lat: 31.42, lng: 34.37, pop: 2600, fam: 520, kids: 1000, dis: 90, other: 12000, last: 14 },
@@ -54,12 +54,12 @@ async function seedDemo() {
     }
     camps.push(camp);
   }
-  // Snapshot قيد المراجعة للمخيم 4
+  // Snapshot pending review for camp 4
   if (!(await prisma.campSnapshot.count({ where: { campId: camps[3].id } }))) {
     await prisma.campSnapshot.create({ data: { campId: camps[3].id, families: 300, population: 1400, children: 600, disabled: 40, waterReceivedLiters: 5000, reportedAt: new Date(), source: 'تقرير ميداني (وهمي)' } });
   }
 
-  // ───── مؤسسات وهمية (الأنواع الثلاثة) ─────
+  // ───── Fake organizations (all three types) ─────
   const orgDefs = [
     { email: 'org-local@demo.test', name: 'مؤسسة محلية تجريبية', orgType: 'LOCAL_ORG' as const },
     { email: 'org-intl@demo.test', name: 'منظمة دولية تجريبية', orgType: 'INTERNATIONAL_ORG' as const },
@@ -75,7 +75,7 @@ async function seedDemo() {
     orgs.push(org);
   }
 
-  // ───── خطة بتوصيات معتمدة ودفعات بحالات مختلفة ─────
+  // ───── Plan with approved recommendations and deliveries in different states ─────
   const [local, intl] = orgs;
   if (!(await prisma.waterPlan.count({ where: { orgId: local.id } }))) {
     const config = await prisma.algorithmConfig.findFirstOrThrow({ where: { isActive: true } });
@@ -107,10 +107,10 @@ async function seedDemo() {
     await mk(0, 8000, 3, 'CONFIRMED', 8000);
     await mk(1, 6000, 2, 'CONFIRMED_DIFF', 5200);
     await mk(2, 7000, 1, 'PENDING', null);
-    await mk(0, 3000, 4, 'CONFIRMED', 3000, intl); // دفعة من جهة أخرى تظهر في الملخص التنسيقي بلا اسم
+    await mk(0, 3000, 4, 'CONFIRMED', 3000, intl); // delivery from another organization; shows up in the coordination summary without a name
   }
 
-  // ───── طلبات تسجيل بحالات مختلفة ─────
+  // ───── Registration requests in different states ─────
   const reqs = [
     { email: 'pending@demo.test', name: 'مخيم قيد الاعتماد (وهمي)', status: 'PENDING' as const, verified: true, entityType: 'CAMP' as const },
     { email: 'unverified@demo.test', name: 'مؤسسة لم تؤكد بريدها (وهمي)', status: 'PENDING' as const, verified: false, entityType: 'LOCAL_ORG' as const },
@@ -130,7 +130,7 @@ async function seedDemo() {
     });
   }
 
-  // رابط تبرع تجريبي (رقم وهمي) ومانح غير منشور بلا صورة حقيقية غير مدرج
+  // Demo donation link (fake number); no donor is seeded because there is no real image
   if (!(await prisma.donationLink.count())) {
     await prisma.donationLink.create({ data: { linkType: 'WHATSAPP', url: 'https://wa.me/15550000000', whatsappNumber: '15550000000', receivingEntityName: 'جهة تجريبية (وهمية)', description: 'رقم وهمي لأغراض الاختبار فقط', isActive: true, lastStatus: 'OK', lastVerifiedAt: new Date() } });
   }

@@ -8,8 +8,8 @@ export function normalizePhone(raw: string | undefined | null): string | null {
 }
 
 /**
- * حماية رابط التبرع: HTTPS فقط، ونطاق مسموح بمطابقة تامة (يرفض wa.me.evil.com)،
- * ورقم واتساب بصيغة دولية صالحة يطابق الرابط (TC72، TC83–85).
+ * Donation link protection: HTTPS only, an allowed domain by exact match (rejects wa.me.evil.com),
+ * and a valid international WhatsApp number matching the link (TC72, TC83–85).
  */
 export function validateDonationLink(input: { linkType: LinkType; url: string; whatsappNumber?: string }, allowedDomains: string[]): string | null {
   let u: URL;

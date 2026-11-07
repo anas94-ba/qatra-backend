@@ -5,7 +5,7 @@ import { AuthUser } from '../common/types';
 import { ApproveDto, DirectAccountDto, HoldDto, RegistrationQueryDto, RejectDto, ResubmitDto } from './dto';
 import { RegistrationsService } from './registrations.service';
 
-/** صفحات حالة الطلب للمتقدم (قيد الاعتماد / مرفوض): للاطلاع وإعادة التقديم فقط */
+/** Request status pages for the applicant (pending / rejected): view and resubmit only */
 @Controller('registration')
 export class RegistrationController {
   constructor(private svc: RegistrationsService) {}

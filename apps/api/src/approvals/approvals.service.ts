@@ -9,7 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export class ApprovalItemDto {
   @IsString() recommendationId: string;
-  /** بدون قيمة = اعتماد التوصية كما هي */
+  /** No value = approve the recommendation as is */
   @IsOptional() @IsInt() @Min(0) approvedLiters?: number;
   @IsOptional() @IsString() adjustmentReason?: string;
 }
@@ -21,7 +21,7 @@ export class ApproveRecommendationsDto {
 export class ApprovalsService {
   constructor(private prisma: PrismaService, private plans: PlansService, private audit: AuditService) {}
 
-  /** اعتماد أو تعديل الكميات: سبب التعديل إلزامي ويُحفظ الفرق (TC40، TC41) */
+  /** Approve or adjust quantities: an adjustment reason is mandatory and the difference is stored (TC40, TC41) */
   async approve(u: AuthUser, planId: string, dto: ApproveRecommendationsDto) {
     const plan = await this.plans.getOwned(u, planId);
     if (plan.status === 'COMPLETED') throw new ConflictException('الخطة مكتملة');

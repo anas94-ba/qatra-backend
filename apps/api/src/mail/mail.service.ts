@@ -12,7 +12,7 @@ export class MailService {
     auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
   });
 
-  /** لا يرمي استثناءً: فشل البريد لا يُفشل العملية (TC05). يرجع false عند الفشل. */
+  /** Never throws: a mail failure does not fail the operation (TC05). Returns false on failure. */
   async send(to: string, mail: { subject: string; html: string }): Promise<boolean> {
     try {
       await this.transporter.sendMail({ from: env.mailFrom, to, subject: mail.subject, html: mail.html });

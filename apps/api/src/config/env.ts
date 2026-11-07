@@ -1,6 +1,6 @@
 const num = (k: string, d: number) => Number(process.env[k] ?? d);
 
-/** قراءة كسولة للإعدادات حتى يكون ConfigModule قد حمّل ملف .env */
+/** Lazy reads so ConfigModule has already loaded the .env file */
 export const env = {
   get isProd() { return process.env.NODE_ENV === 'production'; },
   get port() { return num('PORT', 4000); },
