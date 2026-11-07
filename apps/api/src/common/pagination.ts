@@ -1,16 +1,9 @@
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
 import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
+import type { PageQuery } from './pagination.dto';
 
-export const DEFAULT_PAGE_SIZE = 10;
-export const MAX_PAGE_SIZE = 100;
-
-/** What the client requests */
-export interface PageQuery {
-  page: number;
-  pageSize: number;
-}
+export { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, PaginationDto } from './pagination.dto';
+export type { PageQuery } from './pagination.dto';
 
 export interface PageMeta extends PageQuery {
   total: number;
@@ -29,15 +22,6 @@ export interface Paginated<T> {
 export interface PageWindow {
   skip: number;
   take: number;
-}
-
-/** Inherited by every list DTO: ?page=1&pageSize=10 */
-export class PaginationDto implements PageQuery {
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
-  page: number = 1;
-
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(MAX_PAGE_SIZE)
-  pageSize: number = DEFAULT_PAGE_SIZE;
 }
 
 export function buildMeta(total: number, { page, pageSize }: PageQuery): PageMeta {

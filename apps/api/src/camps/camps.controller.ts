@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CurrentUser, Roles } from '../common/decorators';
 import { PaginationDto } from '../common/pagination';
@@ -8,6 +9,8 @@ import { CampsService } from './camps.service';
 import { CampsQueryDto, CreateCampDto, CreateSnapshotDto, ReviewSnapshotDto, SnapshotsQueryDto, UpdateCampDto, UpdateOwnCampDto } from './dto';
 
 @Roles(Role.CAMP_REP)
+@ApiTags('Camp')
+@ApiBearerAuth()
 @Controller('camp')
 export class CampController {
   constructor(private svc: CampsService, private notifications: NotificationsService) {}
@@ -26,6 +29,8 @@ export class CampController {
 }
 
 @Roles(Role.ADMIN)
+@ApiTags('Admin - Camps')
+@ApiBearerAuth()
 @Controller('admin')
 export class AdminCampsController {
   constructor(private svc: CampsService, private notifications: NotificationsService) {}

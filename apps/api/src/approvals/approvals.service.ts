@@ -1,21 +1,10 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsInt, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { AuditService } from '../audit/audit.service';
 import { AuthUser } from '../common/types';
 import { sanitizeText } from '../common/text';
 import { PlansService } from '../organizations/plans.service';
 import { PrismaService } from '../prisma/prisma.service';
-
-export class ApprovalItemDto {
-  @IsString() recommendationId: string;
-  /** No value = approve the recommendation as is */
-  @IsOptional() @IsInt() @Min(0) approvedLiters?: number;
-  @IsOptional() @IsString() adjustmentReason?: string;
-}
-export class ApproveRecommendationsDto {
-  @IsArray() @ArrayMinSize(1) @ValidateNested({ each: true }) @Type(() => ApprovalItemDto) items: ApprovalItemDto[];
-}
+import { ApproveRecommendationsDto } from './dto';
 
 @Injectable()
 export class ApprovalsService {
