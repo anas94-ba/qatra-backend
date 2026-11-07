@@ -24,7 +24,7 @@ export class DeliveriesService {
   private orgId(u: AuthUser) { if (!u.organizationId) throw new ForbiddenException('الحساب غير مرتبط بمؤسسة'); return u.organizationId; }
   private campId(u: AuthUser) { if (!u.campId) throw new ForbiddenException('الحساب غير مرتبط بمخيم'); return u.campId; }
 
-  // ───────── المؤسسة ─────────
+  // ───────── Organization ─────────
   async create(u: AuthUser, dto: CreateDeliveryDto) {
     const orgId = this.orgId(u);
     if (!isValidDateString(dto.sentAt)) throw new BadRequestException('تاريخ الدفعة غير صالح');
@@ -37,7 +37,7 @@ export class DeliveriesService {
     const camp = await this.prisma.camp.findFirst({ where: { id: dto.campId, deletedAt: null } });
     if (!camp || camp.status !== 'ACTIVE') throw new ConflictException('المخيم موقوف أو غير موجود ولا يستلم دفعات');
 
-    // تحذير (لا منع) إن تجاوزت الكمية المتبقي من المعتمد
+    // warn (do not block) when the quantity exceeds what remains of the approved amount
     const approval = await this.prisma.approval.findFirst({ where: { recommendation: { planId: plan.id, campId: dto.campId } } });
     const warnings: string[] = [];
     if (!approval) warnings.push('لا توجد كمية معتمدة لهذا المخيم ضمن الخطة');
@@ -54,7 +54,7 @@ export class DeliveriesService {
         data: { planId: plan.id, approvalId: approval?.id ?? null, fromOrgId: orgId, toCampId: dto.campId, sentLiters: dto.sentLiters, sentAt: toDateOnly(dto.sentAt), executor: sanitizeText(dto.executor), proofUrl: dto.proofUrl ?? null, createdById: u.id },
         include: FULL,
       });
-      // إشعار لمدير المخيم الصحيح فقط (TC50)
+      // notify the correct camp manager only (TC50)
       await this.notifications.notify(await this.notifications.campUserIds(dto.campId, tx), { type: 'DELIVERY_CREATED', title: 'دفعة جديدة بانتظار تأكيدك', body: `${d.sentLiters} لتر من ${d.fromOrg.name}`, deliveryId: d.id }, tx);
       await this.audit.log({ userId: u.id, action: 'CREATE', entity: 'Delivery', entityId: d.id, after: d }, tx);
       return d;
@@ -62,7 +62,7 @@ export class DeliveriesService {
     return { ...view(delivery), warnings };
   }
 
-  /** تعديل أو إلغاء وهي PENDING فقط، وتُقفل بعد رد المخيم (TC55) */
+  /** Edit or cancel only while PENDING; locked after the camp responds (TC55) */
   private async ownPending(u: AuthUser, id: string) {
     const d = await this.prisma.delivery.findUnique({ where: { id } });
     if (!d) throw new NotFoundException('الدفعة غير موجودة');
@@ -95,7 +95,7 @@ export class DeliveriesService {
     return { id, status: 'CANCELLED' };
   }
 
-  // ───────── مدير المخيم ─────────
+  // ───────── Camp manager ─────────
   private async ownIncoming(u: AuthUser, id: string) {
     const d = await this.prisma.delivery.findUnique({ where: { id }, include: FULL });
     if (!d) throw new NotFoundException('الدفعة غير موجودة');
@@ -121,20 +121,20 @@ export class DeliveriesService {
   private async decide(u: AuthUser, d: Full, status: DeliveryStatus, received: number | null, note: string | null) {
     if (d.frozen) throw new ConflictException('الدفعة مجمّدة بسبب توقيف أحد الطرفين');
     await this.prisma.$transaction(async (tx) => {
-      // claim ذري: الضغطة الثانية ترفض دون ازدواج في الأرقام (TC57)
+      // atomic claim: a second click is rejected without double-counting (TC57)
       const claimed = await tx.delivery.updateMany({ where: { id: d.id, status: 'PENDING', frozen: false }, data: { status, receivedLiters: received, decidedById: u.id, decidedAt: new Date(), decisionNote: note } });
       if (claimed.count === 0) throw new ConflictException('تم الرد على هذه الدفعة مسبقًا');
       const titles: Record<string, string> = { CONFIRMED: 'قبل المخيم الدفعة', CONFIRMED_DIFF: 'قبل المخيم الدفعة بكمية مختلفة', REJECTED: 'رفض المخيم الدفعة' };
       const body = `${d.toCamp.name}: ${status === 'REJECTED' ? `السبب: ${note}` : `المستلم ${received} من ${d.sentLiters} لتر`}`;
       const n = { type: `DELIVERY_${status}`, title: titles[status], body, deliveryId: d.id };
       await this.notifications.notify(await this.notifications.orgUserIds(d.fromOrgId, tx), n, tx);
-      if (status !== 'CONFIRMED') await this.notifications.notify(await this.notifications.adminIds(tx), n, tx); // الأدمن عند الرفض أو الفرق
+      if (status !== 'CONFIRMED') await this.notifications.notify(await this.notifications.adminIds(tx), n, tx); // admins are notified on rejection or difference
       await this.audit.log({ userId: u.id, action: status, entity: 'Delivery', entityId: d.id, before: { status: 'PENDING', sentLiters: d.sentLiters }, after: { status, receivedLiters: received, note } }, tx);
     });
     return { id: d.id, status, receivedLiters: received };
   }
 
-  // ───────── السجلات (واردة/صادرة) ─────────
+  // ───────── Logs (incoming/outgoing) ─────────
   private static readonly CSV_LIMIT = 5000;
 
   private filters(q: DeliveryQueryDto, base: Prisma.DeliveryWhereInput): Prisma.DeliveryWhereInput {
@@ -146,7 +146,7 @@ export class DeliveriesService {
   }
 
   private outgoingWhere(u: AuthUser, q: DeliveryQueryDto) {
-    // لا ترى المؤسسة إلا دفعاتها (TC61)
+    // an organization sees only its own deliveries (TC61)
     return this.filters(q, { fromOrgId: this.orgId(u), toCampId: q.counterpartyId });
   }
 
@@ -167,7 +167,7 @@ export class DeliveriesService {
   outgoing(u: AuthUser, q: DeliveryQueryDto) { return this.list(this.outgoingWhere(u, q), q); }
   incoming(u: AuthUser, q: DeliveryQueryDto) { return this.list(this.incomingWhere(u, q), q); }
 
-  /** التصدير يتجاهل الصفحات ويعيد حتى CSV_LIMIT صفًا */
+  /** Export ignores paging and returns up to CSV_LIMIT rows */
   async exportCsv(u: AuthUser, q: DeliveryQueryDto, direction: 'in' | 'out') {
     const where = direction === 'out' ? this.outgoingWhere(u, q) : this.incomingWhere(u, q);
     const rows = await this.prisma.delivery.findMany({ where, include: FULL, orderBy: { sentAt: 'desc' }, take: DeliveriesService.CSV_LIMIT });
@@ -187,12 +187,12 @@ export class DeliveriesService {
     const where: Prisma.DeliveryWhereInput = {
       ...this.filters(q, {}),
       ...(q.disputed ? { status: { in: ['CONFIRMED_DIFF', 'REJECTED'] } } : {}),
-      fromOrg: q.orgType ? { orgType: q.orgType } : undefined, // فلتر النوع (I3)
+      fromOrg: q.orgType ? { orgType: q.orgType } : undefined, // filter by entity type (I3)
     };
     return this.list(where, q);
   }
 
-  /** تصحيح دفعة متنازع عليها مع سبب في AuditLog (TC64) */
+  /** Correct a disputed delivery with a reason in AuditLog (TC64) */
   async correct(adminId: string, id: string, dto: CorrectDeliveryDto) {
     const before = await this.prisma.delivery.findUnique({ where: { id } });
     if (!before) throw new NotFoundException('الدفعة غير موجودة');

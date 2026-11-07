@@ -12,7 +12,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({ jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), ignoreExpiration: false, secretOrKey: env.jwtSecret });
   }
 
-  /** يُقرأ المستخدم والجهة من القاعدة عند كل طلب، فيسري التوقيف فورًا (TC128). */
+  /** The user and entity are read from the database on every request, so a suspension takes effect immediately (TC128). */
   async validate(payload: { sub: string }): Promise<AuthUser> {
     const u = await this.prisma.user.findFirst({ where: { id: payload.sub, deletedAt: null }, include: userInclude });
     if (!u) throw new UnauthorizedException();

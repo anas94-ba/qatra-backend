@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
 
-/** عميل قاعدة بيانات أو معاملة جارية، لتمرير نفس الواجهة للخدمات */
+/** A database client or an ongoing transaction, so services share the same interface */
 export type Db = Prisma.TransactionClient;
 
 @Injectable()

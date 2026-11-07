@@ -69,7 +69,7 @@ enum DonationLinkType {
   EXTERNAL_SITE
 }
 
-// ───────── الحسابات والتسجيل ─────────
+// ───────── Accounts and registration ─────────
 model User {
   id                    String    @id @default(uuid())
   email                 String    @unique
@@ -169,7 +169,7 @@ model RegistrationRequest {
   @@index([status, createdAt])
 }
 
-// ───────── الجهات ─────────
+// ───────── Entities ─────────
 model Organization {
   id                 String       @id @default(uuid())
   name               String
@@ -240,7 +240,7 @@ model CampSnapshot {
   @@index([campId, reviewStatus, reportedAt])
 }
 
-// ───────── الخطط والخوارزمية ─────────
+// ───────── Plans and algorithm ─────────
 model WaterPlan {
   id               String     @id @default(uuid())
   orgId            String
@@ -312,7 +312,7 @@ model AlgorithmConfig {
   createdAt     DateTime @default(now())
 }
 
-// ───────── الدفعات والإشعارات ─────────
+// ───────── Deliveries and notifications ─────────
 model Delivery {
   id           String         @id @default(uuid())
   planId       String?
@@ -359,7 +359,7 @@ model Notification {
   @@index([deliveryId, type])
 }
 
-// ───────── التبرع والمانحون والتدقيق ─────────
+// ───────── Donation, donors and audit ─────────
 model DonationLink {
   id                  String           @id @default(uuid())
   linkType            DonationLinkType

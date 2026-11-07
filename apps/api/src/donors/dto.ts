@@ -3,7 +3,7 @@ import { IsBoolean, IsInt, IsISO8601, IsOptional, IsString, MaxLength, MinLength
 
 const bool = ({ value }: { value: unknown }) => value === true || value === 'true';
 
-/** حقول multipart تصل نصوصًا فتُحوَّل هنا */
+/** multipart fields arrive as strings and are converted here */
 export class CreateDonorDto {
   @IsString({ message: 'النص البديل إلزامي' }) @MinLength(3, { message: 'النص البديل إلزامي' }) @MaxLength(200) altText: string;
   @IsISO8601({}, { message: 'تاريخ الموافقة إلزامي' }) consentGivenAt: string;

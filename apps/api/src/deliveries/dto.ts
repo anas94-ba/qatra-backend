@@ -20,7 +20,7 @@ export class UpdateDeliveryDto {
   @IsOptional() @IsString() @MaxLength(500) proofUrl?: string;
 }
 export class ConfirmDeliveryDto {
-  /** بدون قيمة = استلام بنفس الكمية */
+  /** No value = received the same quantity */
   @IsOptional() @IsInt() @Min(0) receivedLiters?: number;
   @IsOptional() @IsString() @MaxLength(1000) reason?: string;
 }
@@ -32,7 +32,7 @@ export class CorrectDeliveryDto {
   @IsString({ message: 'سبب التصحيح إلزامي' }) @MinLength(3) @MaxLength(1000) reason: string;
 }
 
-/** فلاتر السجلات (واردة/صادرة/أدمن). `counterpartyId` هو الطرف الآخر: المخيم للمؤسسة، والمؤسسة للمخيم. */
+/** Log filters (incoming/outgoing/admin). `counterpartyId` is the other party: the camp for an organization, the organization for a camp. */
 export class DeliveryQueryDto extends PaginationDto {
   @IsOptional() @IsEnum(DeliveryStatus) status?: DeliveryStatus;
   @IsOptional() @Matches(DATE) from?: string;

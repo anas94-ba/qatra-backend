@@ -44,7 +44,7 @@ export class OrgController {
 export class AdminOrgsController {
   constructor(private prisma: PrismaService, private audit: AuditService) {}
 
-  /** فلتر الجهات حسب النوع (I3) */
+  /** Filter entities by type (I3) */
   @Get()
   list(@Query() q: OrgsQueryDto) {
     const where: Prisma.OrganizationWhereInput = { deletedAt: null, orgType: q.orgType, status: q.status };

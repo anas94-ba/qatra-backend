@@ -17,12 +17,12 @@ export class RecommendationsService {
     return { version: c.version, weights: c.weights as any, referenceLpcd: c.referenceLpcd };
   }
 
-  /** يجمع مدخلات الخوارزمية: آخر Snapshot معتمد فقط (TC35) + الدفعات المؤكدة (FR-16) */
+  /** Collects the algorithm inputs: latest approved Snapshot only (TC35) + confirmed deliveries (FR-16) */
   async buildInputs(campIds: string[]): Promise<{ inputs: CampInput[]; excluded: string[] }> {
     const today = todayInGaza();
     const camps = await this.prisma.camp.findMany({ where: { id: { in: campIds }, status: 'ACTIVE', deletedAt: null }, select: { id: true } });
     const activeIds = camps.map((c) => c.id);
-    const excluded = campIds.filter((id) => !activeIds.includes(id)); // الموقوف يُستثنى من التوصيات (TC120)
+    const excluded = campIds.filter((id) => !activeIds.includes(id)); // a suspended camp is excluded from recommendations (TC120)
 
     const snaps = await this.prisma.campSnapshot.findMany({ where: { campId: { in: activeIds }, reviewStatus: 'APPROVED' }, orderBy: { reportedAt: 'desc' } });
     const latest = new Map<string, (typeof snaps)[number]>();
@@ -80,12 +80,12 @@ export class RecommendationsService {
     };
   }
 
-  // ───────── إعدادات الخوارزمية (الأدمن) ─────────
+  // ───────── Algorithm settings (admin) ─────────
   configs() {
     return this.prisma.algorithmConfig.findMany({ orderBy: { version: 'desc' }, take: 20 });
   }
 
-  /** أي تعديل ينشئ نسخة جديدة ولا يغيّر التوصيات القديمة (D5) */
+  /** Any change creates a new version and never alters old recommendations (D5) */
   async createConfig(adminId: string, weights: { gap: number; vulnerability: number; daysSince: number; population: number }, referenceLpcd: number) {
     const before = await this.prisma.algorithmConfig.findFirst({ where: { isActive: true } });
     const created = await this.prisma.$transaction(async (tx) => {

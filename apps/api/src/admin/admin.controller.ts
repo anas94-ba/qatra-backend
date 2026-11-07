@@ -5,7 +5,7 @@ import { AuthUser } from '../common/types';
 import { ResolveFrozenDto, SuspendDto } from './dto';
 import { SuspensionService } from './suspension.service';
 
-/** التوقيف وإعادة التفعيل للأدمن فقط (TC129) */
+/** Suspension and reactivation are admin-only (TC129) */
 @Roles(Role.ADMIN)
 @Controller('admin')
 export class AdminController {
