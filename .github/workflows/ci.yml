@@ -20,7 +20,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm }
+        with:
+          node-version: 22
+          # Cache only when a lockfile is committed (setup-node fails without one)
+          cache: ${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}
       - run: if [ -f package-lock.json ]; then npm ci; else npm install; fi
       - run: npx prisma generate
         working-directory: apps/api
