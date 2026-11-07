@@ -32,8 +32,8 @@ export class JobsService {
   verifyLink() { return this.guarded('verifyDonationLink', () => this.donation.verifyActiveLink()); }
 
   /**
-   * تذكير بالدفعات المعلّقة أكثر من المدة (FR-28): مرة لكل فترة، بدون قبول تلقائي أبدًا،
-   * مع تجميع للمؤسسة والأدمن حتى لا يحدث سيل إشعارات (E11).
+   * Reminder for deliveries pending longer than the threshold (FR-28): once per period, never auto-accepts,
+   * with grouping per organization and admin to avoid a flood of notifications (E11).
    */
   async remindPendingDeliveries(now = new Date()) {
     const days = env.reminderAfterDays;
@@ -59,7 +59,7 @@ export class JobsService {
     return { reminded: due.length };
   }
 
-  /** حذف الحسابات التي لم تؤكد بريدها خلال 7 أيام (FR-7، TC16). لا يمس الأدمن ولا الحسابات المنشأة مباشرة. */
+  /** Delete accounts that did not verify their email within 7 days (FR-7, TC16). Never touches admins or directly created accounts. */
   async purgeUnverifiedAccounts(now = new Date()) {
     const users = await this.prisma.user.findMany({ where: { emailVerifiedAt: null, role: { not: 'ADMIN' }, createdAt: { lte: addDaysTo(-7, now) } }, select: { id: true } });
     if (!users.length) return { deleted: 0 };

@@ -21,8 +21,8 @@ const ORG_KEYS = ['registrationNumber', 'registrationDocUrl', 'hqCountry', 'refe
 const posInt = (v: unknown) => typeof v === 'number' && Number.isInteger(v) && v >= 1;
 
 /**
- * نموذج المخيم يختلف عن نموذج المؤسسة/المبادرة، والتحقق مستقل لكل نوع (TC100–TC102).
- * يرجع الحقول بعد التنظيف + قائمة الأخطاء بالعربية.
+ * The camp form differs from the organization/initiative form, with independent validation per type (TC100–TC102).
+ * Returns the cleaned fields + a list of errors (in Arabic).
  */
 export function validateRegistrationInput(input: RegistrationInput) {
   const errors: string[] = [];

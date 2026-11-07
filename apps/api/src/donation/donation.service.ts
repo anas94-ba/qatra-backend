@@ -19,7 +19,7 @@ export class DonationService {
     return this.prisma.donationLink.findFirst({ orderBy: { updatedAt: 'desc' } });
   }
 
-  /** سجل واحد مفعّل في MVP: التغيير يتطلب إعادة مصادقة + AuditLog قبل/بعد + تنبيه بريدي لباقي الأدمنين */
+  /** One active record in the MVP: changing it requires re-authentication + AuditLog before/after + an email alert to the other admins */
   async update(u: AuthUser, dto: UpdateDonationLinkDto) {
     const admin = await this.prisma.user.findUnique({ where: { id: u.id } });
     if (!admin || !(await argon2.verify(admin.passwordHash, dto.password).catch(() => false))) throw new ForbiddenException('كلمة المرور غير صحيحة. إعادة المصادقة مطلوبة لتغيير الرابط.');
@@ -42,7 +42,7 @@ export class DonationService {
     return after;
   }
 
-  /** فحص دوري: الصيغة والنطاق دائمًا، والوصول الفعلي للمواقع الخارجية. تنبيه عند الفشل. */
+  /** Periodic check: format and domain always, and actual reachability for external sites. Alerts on failure. */
   async verifyActiveLink() {
     const link = await this.prisma.donationLink.findFirst({ where: { isActive: true } });
     if (!link) return { checked: false };

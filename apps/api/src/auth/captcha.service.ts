@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 
-/** Cloudflare Turnstile. بدون CAPTCHA_SECRET يُعطَّل (التطوير والاختبار). */
+/** Cloudflare Turnstile. Disabled when CAPTCHA_SECRET is unset (development and tests). */
 @Injectable()
 export class CaptchaService {
   async verify(token?: string) {

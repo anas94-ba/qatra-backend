@@ -28,7 +28,7 @@ export class AuthService {
     private captcha: CaptchaService,
   ) {}
 
-  // ───────── التسجيل ─────────
+  // ───────── Registration ─────────
   async register(dto: RegisterDto) {
     if (dto.password !== dto.passwordConfirm) throw new BadRequestException('كلمة المرور وتأكيدها غير متطابقتين');
     const pwError = validatePassword(dto.password);
@@ -44,7 +44,7 @@ export class AuthService {
     const passwordHash = await argon2.hash(dto.password, { type: argon2.argon2id });
     const verifyToken = newToken();
     try {
-      // معاملة واحدة: المستخدم + الطلب + رمز التأكيد. الدور والحالة يحددهما النظام لا النموذج.
+      // Single transaction: user + request + verification token. Role and status are set by the system, not the form.
       await this.prisma.$transaction(async (tx) => {
         const user = await tx.user.create({
           data: { email, passwordHash, fullName: clean.contactName, phone: clean.phone, role: dto.entityType === 'CAMP' ? Role.CAMP_REP : Role.ORG },
@@ -61,7 +61,7 @@ export class AuthService {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') throw new ConflictException('هذا البريد مسجّل مسبقًا.');
       throw e;
     }
-    // فشل البريد لا يُسقط التسجيل (TC05): يُنشأ الحساب وتظهر «إعادة إرسال رابط التأكيد»
+    // A mail failure does not fail registration (TC05): the account is created and the UI offers "resend verification link"
     const emailSent = await this.mail.send(email, templates.verifyEmail(verifyToken));
     return { message: 'تم إنشاء الحساب. أكّد بريدك الإلكتروني ليدخل طلبك قائمة المراجعة.', emailSent };
   }
@@ -89,7 +89,7 @@ export class AuthService {
     return { message: 'إن كان هناك حساب غير مؤكد بهذا البريد فقد أُرسل له رابط جديد.' };
   }
 
-  // ───────── الدخول والجلسات ─────────
+  // ───────── Login and sessions ─────────
   async login(email: string, password: string) {
     const user = await this.prisma.user.findFirst({ where: { email, deletedAt: null }, include: userInclude });
     if (user?.lockedUntil && user.lockedUntil > new Date()) {
@@ -139,7 +139,7 @@ export class AuthService {
     return this.session(user);
   }
 
-  /** الجلسة: بيانات المستخدم + الوجهة + بيانات صفحة الحالة (بدون الملاحظة الداخلية للأدمن) */
+  /** Session: user data + landing + status-page data (without the admin internal note) */
   private session(user: UserWithRels) {
     const landing = computeLanding(user);
     const r = user.registrationRequest;
@@ -158,7 +158,7 @@ export class AuthService {
     };
   }
 
-  // ───────── كلمات المرور ─────────
+  // ───────── Passwords ─────────
   async changePassword(userId: string, current: string, next: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || !(await argon2.verify(user.passwordHash, current).catch(() => false))) throw new BadRequestException('كلمة المرور الحالية غير صحيحة');
@@ -171,7 +171,7 @@ export class AuthService {
     return { message: 'تم تغيير كلمة المرور. سجّل الدخول من جديد.' };
   }
 
-  /** رد عام ثابت سواء وُجد البريد أم لا (TC11) */
+  /** Constant generic reply whether or not the email exists (TC11) */
   async forgotPassword(email: string) {
     const user = await this.prisma.user.findFirst({ where: { email, deletedAt: null } });
     if (user) {
@@ -182,7 +182,7 @@ export class AuthService {
     return GENERIC_RESET;
   }
 
-  /** يخدم «نسيت كلمة المرور» ورابط تعيين كلمة المرور للحسابات التي ينشئها الأدمن (لمرة واحدة، TC12) */
+  /** Serves "forgot password" and the set-password link for admin-created accounts (single use, TC12) */
   async resetPassword(token: string, next: string, confirm: string) {
     if (next !== confirm) throw new BadRequestException('كلمة المرور وتأكيدها غير متطابقتين');
     const err = validatePassword(next);

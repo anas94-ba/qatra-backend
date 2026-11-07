@@ -1,27 +1,16 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsInt, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { AuditService } from '../audit/audit.service';
 import { AuthUser } from '../common/types';
 import { sanitizeText } from '../common/text';
 import { PlansService } from '../organizations/plans.service';
 import { PrismaService } from '../prisma/prisma.service';
-
-export class ApprovalItemDto {
-  @IsString() recommendationId: string;
-  /** بدون قيمة = اعتماد التوصية كما هي */
-  @IsOptional() @IsInt() @Min(0) approvedLiters?: number;
-  @IsOptional() @IsString() adjustmentReason?: string;
-}
-export class ApproveRecommendationsDto {
-  @IsArray() @ArrayMinSize(1) @ValidateNested({ each: true }) @Type(() => ApprovalItemDto) items: ApprovalItemDto[];
-}
+import { ApproveRecommendationsDto } from './dto';
 
 @Injectable()
 export class ApprovalsService {
   constructor(private prisma: PrismaService, private plans: PlansService, private audit: AuditService) {}
 
-  /** اعتماد أو تعديل الكميات: سبب التعديل إلزامي ويُحفظ الفرق (TC40، TC41) */
+  /** Approve or adjust quantities: an adjustment reason is mandatory and the difference is stored (TC40, TC41) */
   async approve(u: AuthUser, planId: string, dto: ApproveRecommendationsDto) {
     const plan = await this.plans.getOwned(u, planId);
     if (plan.status === 'COMPLETED') throw new ConflictException('الخطة مكتملة');

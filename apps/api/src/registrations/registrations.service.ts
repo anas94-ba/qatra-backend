@@ -15,22 +15,22 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { DirectAccountDto, RegistrationQueryDto, ResubmitDto } from './dto';
 
-const COORD_EPS = 0.005; // ≈ 500 م
+const COORD_EPS = 0.005; // ≈ 500 m
 
 @Injectable()
 export class RegistrationsService {
   constructor(private prisma: PrismaService, private audit: AuditService, private mail: MailService, private notifications: NotificationsService) {}
 
-  // ───────── المتقدم ─────────
+  // ───────── Applicant ─────────
   async myRequest(userId: string) {
     const r = await this.prisma.registrationRequest.findUnique({ where: { userId } });
     if (!r) throw new NotFoundException('لا يوجد طلب تسجيل');
-    // الملاحظة الداخلية للأدمن لا تظهر للمتقدم أبدًا (A11)
+    // The admin internal note is never shown to the applicant (A11)
     const { internalNote, decidedById, ...safe } = r;
     return { ...safe, attemptsRemaining: attemptsRemaining(r), canResubmit: r.status === 'REJECTED' && attemptsRemaining(r) > 0 };
   }
 
-  /** إعادة التقديم بعد الرفض: نفس الحساب، وتُحتسب محاولة (TC111، TC113) */
+  /** Resubmission after rejection: same account, and an attempt is counted (TC111, TC113) */
   async resubmit(userId: string, dto: ResubmitDto) {
     const r = await this.prisma.registrationRequest.findUnique({ where: { userId } });
     if (!r || r.status !== 'REJECTED') throw new ForbiddenException('لا يمكن إعادة التقديم في حالة الطلب الحالية');
@@ -50,9 +50,9 @@ export class RegistrationsService {
     return this.myRequest(userId);
   }
 
-  // ───────── الأدمن: الطابور ─────────
+  // ───────── Admin: queue ─────────
   async list(q: RegistrationQueryDto) {
-    // لا يدخل الطابور طلب لم يؤكد صاحبه بريده (TC118)
+    // a request whose owner has not verified their email never enters the queue (TC118)
     const where: Prisma.RegistrationRequestWhereInput = {
       user: { emailVerifiedAt: { not: null } },
       status: q.status,
@@ -74,7 +74,7 @@ export class RegistrationsService {
     return { ...r, duplicates: await this.findDuplicates(r) };
   }
 
-  /** تنبيه التكرار: اسم أو موقع قريب للمخيم، واسم أو رقم تسجيل للمؤسسة (FR-7) */
+  /** Duplicate alert: a camp by name or nearby location, an organization by name or registration number (FR-7) */
   async findDuplicates(r: { id: string; entityType: string; name: string; lat: number | null; lng: number | null; details: Prisma.JsonValue }) {
     const out: { kind: string; id: string; name: string; reason: string }[] = [];
     const nameEq = { equals: r.name, mode: 'insensitive' as const };
@@ -99,14 +99,14 @@ export class RegistrationsService {
     return out;
   }
 
-  // ───────── الأدمن: القرارات ─────────
+  // ───────── Admin: decisions ─────────
   async approve(adminId: string, id: string, orgType?: OrgType) {
     const req = await this.prisma.registrationRequest.findUnique({ where: { id }, include: { user: true } });
     if (!req) throw new NotFoundException('الطلب غير موجود');
     if (!req.user.emailVerifiedAt) throw new BadRequestException('صاحب الطلب لم يؤكد بريده بعد');
 
     const entityId = await this.prisma.$transaction(async (tx) => {
-      // «claim» ذري: النقرة الثانية تفشل فلا يتكرر الكيان (TC117)
+      // atomic claim: a second click fails, so the entity is never duplicated (TC117)
       const claimed = await tx.registrationRequest.updateMany({ where: { id, status: 'PENDING' }, data: { status: 'APPROVED', decidedById: adminId, decidedAt: new Date(), rejectionReason: null } });
       if (claimed.count === 0) throw new ConflictException('تم البتّ في هذا الطلب مسبقًا');
       let createdId: string;
@@ -148,7 +148,7 @@ export class RegistrationsService {
     return { id, status: 'REJECTED' };
   }
 
-  /** إبقاء الطلب «قيد الاعتماد» مع ملاحظة داخلية لا تظهر للمتقدم (TC115) */
+  /** Keep the request pending with an internal note that is not shown to the applicant (TC115) */
   async hold(adminId: string, id: string, note: string) {
     const r = await this.prisma.registrationRequest.findUnique({ where: { id } });
     if (!r) throw new NotFoundException('الطلب غير موجود');
@@ -167,7 +167,7 @@ export class RegistrationsService {
     return { id, extraAttempts: u.extraAttempts, attemptsRemaining: attemptsRemaining(u) };
   }
 
-  // ───────── حساب جهة مباشر (A13) ─────────
+  // ───────── Direct entity account (A13) ─────────
   async createDirectAccount(adminId: string, dto: DirectAccountDto) {
     const isCamp = dto.entityType === 'CAMP';
     const name = sanitizeText(dto.name);
@@ -181,7 +181,7 @@ export class RegistrationsService {
       const entity = isCamp
         ? await tx.camp.create({ data: { name, lat: dto.lat!, lng: dto.lng!, region: sanitizeText(dto.region) } })
         : await tx.organization.create({ data: { name, orgType: dto.entityType as OrgType, contact: dto.email, description: dto.description ? sanitizeText(dto.description) : null } });
-      // كلمة مرور عشوائية غير معروفة؛ لا يدخل صاحب الحساب قبل تعيين كلمته عبر الرابط (TC15)
+      // random unknown password; the account owner cannot log in before setting their own via the link (TC15)
       const user = await tx.user.create({
         data: {
           email: dto.email, fullName: sanitizeText(dto.contactName), phone: sanitizeText(dto.phone), role: isCamp ? Role.CAMP_REP : Role.ORG,

@@ -1,10 +1,13 @@
 import { Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators';
 import { AuthUser } from '../common/types';
 import { NotificationsQueryDto } from './dto';
 import { NotificationsService } from './notifications.service';
 
-/** الإشعارات بالجلب (polling) وليست لحظية: الواجهة تطلبها عند الفتح وكل 2–5 دقائق */
+/** Notifications are polled, not real-time: the UI requests them on open and every 2–5 minutes */
+@ApiTags('Notifications')
+@ApiBearerAuth()
 @Controller('notifications')
 export class NotificationsController {
   constructor(private svc: NotificationsService) {}

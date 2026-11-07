@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Put } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CurrentUser, Roles } from '../common/decorators';
 import { AuthUser } from '../common/types';
@@ -6,6 +7,8 @@ import { DonationService } from './donation.service';
 import { UpdateDonationLinkDto } from './dto';
 
 @Roles(Role.ADMIN)
+@ApiTags('Admin - Donation link')
+@ApiBearerAuth()
 @Controller('admin/donation-link')
 export class DonationController {
   constructor(private svc: DonationService) {}

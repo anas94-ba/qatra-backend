@@ -29,6 +29,9 @@ npm run api:test                  # وحدة: الخوارزمية (Property-bas
 npm run test:e2e -w @qatra/api    # تكامل: يحتاج DATABASE_URL لقاعدة اختبار مهاجَرة
 ```
 
+## Swagger
+التوثيق التفاعلي على **http://localhost:4000/api/docs** (والـ JSON على `/api/docs-json`). اضغط **Authorize** وألصق `accessToken` من `/auth/login` لتجربة المسارات المحمية. يعمل خارج الإنتاج، وفي الإنتاج فعّله بـ `SWAGGER_ENABLED=true`.
+
 ## مسارات الـ API (بادئة `/api`)
 | المسار | الوصول | الوصف |
 |---|---|---|

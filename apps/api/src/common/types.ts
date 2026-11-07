@@ -2,7 +2,7 @@ import type { Role, UserStatus } from '@prisma/client';
 
 export type Landing = 'EMAIL_VERIFY' | 'PENDING' | 'REJECTED' | 'DASHBOARD' | 'SUSPENDED';
 
-/** المستخدم كما يُحقن في الطلب بعد فحص حالته من قاعدة البيانات */
+/** The user as injected into the request after checking their state in the database */
 export interface AuthUser {
   id: string;
   email: string;
