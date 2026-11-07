@@ -1,4 +1,5 @@
 import { Controller, Get, Header, Query } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators';
 import { PublicService } from './public.service';
 
@@ -6,6 +7,7 @@ const CACHE = 'public, max-age=60, stale-while-revalidate=300';
 
 /** Read-only and unauthenticated (TC20) */
 @Public()
+@ApiTags('Public')
 @Controller('public')
 export class PublicController {
   constructor(private svc: PublicService) {}

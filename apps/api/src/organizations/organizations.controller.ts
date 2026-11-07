@@ -1,4 +1,5 @@
 import { Body, Controller, ForbiddenException, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Prisma, Role } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { CurrentUser, Roles } from '../common/decorators';
@@ -10,6 +11,8 @@ import { ChangeOrgTypeDto, CreatePlanDto, OrgsQueryDto, TransitionDto, UpdateOrg
 import { PlansService } from './plans.service';
 
 @Roles(Role.ORG)
+@ApiTags('Organization')
+@ApiBearerAuth()
 @Controller('org')
 export class OrgController {
   constructor(private prisma: PrismaService, private plans: PlansService, private audit: AuditService) {}
@@ -40,6 +43,8 @@ export class OrgController {
 }
 
 @Roles(Role.ADMIN)
+@ApiTags('Admin - Organizations')
+@ApiBearerAuth()
 @Controller('admin/organizations')
 export class AdminOrgsController {
   constructor(private prisma: PrismaService, private audit: AuditService) {}
