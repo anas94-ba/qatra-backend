@@ -1,12 +1,15 @@
 import { Body, Controller, HttpCode, Param, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CurrentUser, Roles } from '../common/decorators';
 import { AuthUser } from '../common/types';
 import { ResolveFrozenDto, SuspendDto } from './dto';
 import { SuspensionService } from './suspension.service';
 
-/** التوقيف وإعادة التفعيل للأدمن فقط (TC129) */
+/** Suspension and reactivation are admin-only (TC129) */
 @Roles(Role.ADMIN)
+@ApiTags('Admin - Suspension')
+@ApiBearerAuth()
 @Controller('admin')
 export class AdminController {
   constructor(private svc: SuspensionService) {}

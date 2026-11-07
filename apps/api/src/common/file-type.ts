@@ -1,6 +1,6 @@
 export type DetectedType = 'jpeg' | 'png' | 'webp' | 'pdf' | null;
 
-/** فحص النوع من محتوى الملف (وليس من الامتداد أو الـ mimetype الذي يرسله العميل). SVG مرفوض دائمًا. */
+/** Detects the type from file content (not the extension or the client-sent mimetype). SVG is always rejected. */
 export function detectFileType(b: Buffer): DetectedType {
   if (b.length < 12) return null;
   if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'jpeg';

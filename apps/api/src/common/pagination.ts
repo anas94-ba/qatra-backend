@@ -1,16 +1,9 @@
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
 import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
+import type { PageQuery } from './pagination.dto';
 
-export const DEFAULT_PAGE_SIZE = 10;
-export const MAX_PAGE_SIZE = 100;
-
-/** ما يطلبه العميل */
-export interface PageQuery {
-  page: number;
-  pageSize: number;
-}
+export { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, PaginationDto } from './pagination.dto';
+export type { PageQuery } from './pagination.dto';
 
 export interface PageMeta extends PageQuery {
   total: number;
@@ -19,25 +12,16 @@ export interface PageMeta extends PageQuery {
   hasPrev: boolean;
 }
 
-/** شكل موحّد لكل القوائم */
+/** Uniform shape for every list */
 export interface Paginated<T> {
   items: T[];
   meta: PageMeta;
 }
 
-/** نافذة القراءة من قاعدة البيانات */
+/** Database read window */
 export interface PageWindow {
   skip: number;
   take: number;
-}
-
-/** يُورَّث في كل DTO لقائمة: ?page=1&pageSize=10 */
-export class PaginationDto implements PageQuery {
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1)
-  page: number = 1;
-
-  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(MAX_PAGE_SIZE)
-  pageSize: number = DEFAULT_PAGE_SIZE;
 }
 
 export function buildMeta(total: number, { page, pageSize }: PageQuery): PageMeta {
@@ -49,7 +33,7 @@ export function toWindow({ page, pageSize }: PageQuery): PageWindow {
   return { skip: (page - 1) * pageSize, take: pageSize };
 }
 
-/** قراءة الصفحة والعدد الكلي في معاملة واحدة */
+/** Reads the page and the total count in a single transaction */
 export async function paginate<T>(
   prisma: PrismaService,
   query: PageQuery,

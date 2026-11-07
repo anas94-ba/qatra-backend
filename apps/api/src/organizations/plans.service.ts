@@ -16,8 +16,8 @@ const TRANSITIONS: Record<PlanStatus, PlanStatus[]> = {
 };
 
 /**
- * قاعدة التاريخ (FR-14): بداية الحملة اليوم أو بعده بتوقيت Asia/Gaza، والنهاية لا تسبق البداية.
- * تُحسب في الخادم وليس في الواجهة (TC134).
+ * Date rule (FR-14): the campaign starts today or later in Asia/Gaza time, and the end date is not before the start.
+ * Computed on the server, not in the UI (TC134).
  */
 export function validatePlanDates(start: string, end: string, today = todayInGaza()): string[] {
   const errors: string[] = [];
@@ -38,7 +38,7 @@ export class PlansService {
     return u.organizationId;
   }
 
-  /** قاعدة الملكية: المؤسسة تصل لخططها فقط (TC14) */
+  /** Ownership rule: an organization reaches only its own plans (TC14) */
   async getOwned(u: AuthUser, id: string) {
     const plan = await this.prisma.waterPlan.findUnique({ where: { id }, include: { planCamps: true } });
     if (!plan) throw new NotFoundException('الخطة غير موجودة');
@@ -83,7 +83,7 @@ export class PlansService {
     const newEnd = dto.endDate ?? curEnd;
 
     if (dto.startDate && dto.startDate !== curStart) {
-      // لا يُفرض تحقق التاريخ على حملة بدأت فعلًا ولا يُسمح بتغيير بدايتها (TC136، TC137)
+      // date validation is not enforced on a campaign that already started, and its start cannot change (TC136, TC137)
       if (curStart < today) throw new BadRequestException('لا يمكن تغيير تاريخ بداية حملة بدأت فعلًا');
       if (dto.startDate < today) throw new BadRequestException('لا يمكن أن يكون تاريخ بداية الحملة في الماضي (بتوقيت فلسطين)');
     }
@@ -142,8 +142,8 @@ export class PlansService {
   }
 
   /**
-   * الملخص التنسيقي (FR-30): مجموع ما وصل المخيمات المستهدفة من جهات أخرى خلال 30 يومًا،
-   * نوع الجهة والكمية والتاريخ فقط بدون الاسم، من الدفعات المؤكدة فقط، ولمخيمات خطتها فقط (TC63).
+   * Coordination summary (FR-30): total received over the last 30 days by the plan's target camps from other organizations;
+   * entity type, quantity and date only (no name), confirmed deliveries only, and only for the plan's camps (TC63).
    */
   async coordination(u: AuthUser, planId: string) {
     const plan = await this.getOwned(u, planId);

@@ -1,7 +1,7 @@
 /**
- * خوارزمية التوصية: دوال Pure معزولة بلا قاعدة بيانات (SRS §3.5، Architecture §6).
- * الأوزان والمستوى المرجعي من AlgorithmConfig، ونسخته تُحفظ مع كل توصية لإعادة الإنتاج.
- * التوصية تعكس البيانات المسجلة فقط، وغياب بيانات المساعدات لا يعني عدم وصول المياه.
+ * Recommendation algorithm: pure functions, isolated from the database (SRS §3.5, Architecture §6).
+ * Weights and the reference level come from AlgorithmConfig, and its version is stored with every recommendation for reproducibility.
+ * Recommendations reflect recorded data only; missing aid data does not mean no water arrived.
  */
 export interface AlgorithmWeights { gap: number; vulnerability: number; daysSince: number; population: number }
 export interface AlgorithmConfig { version: number; weights: AlgorithmWeights; referenceLpcd: number }
@@ -12,13 +12,13 @@ export interface CampInput {
   population: number;
   children: number;
   disabled: number;
-  /** لترات/يوم من مصادر أخرى (آخر Snapshot معتمد) */
+  /** Liters/day from other sources (latest approved Snapshot) */
   litersPerDayOtherSources: number;
-  /** لترات/يوم مشتقة من الدفعات المؤكدة في نافذة التقدير */
+  /** Liters/day derived from confirmed deliveries in the estimation window */
   confirmedLitersPerDay: number;
-  /** null = لا يوجد تاريخ توزيع معروف */
+  /** null = no known distribution date */
   daysSinceLastDistribution: number | null;
-  /** عمر البيانات بالأيام؛ null = لا بيانات معتمدة */
+  /** Data age in days; null = no approved data */
   dataAgeDays: number | null;
 }
 
@@ -49,7 +49,7 @@ export function currentLpcd(c: CampInput): number {
 }
 export const gapLpcd = (referenceLpcd: number, current: number) => Math.max(0, referenceLpcd - current);
 
-/** 1) تطبيع كل مؤشر إلى 0–1 */
+/** 1) Normalize every indicator to 0–1 */
 export function normalize(c: CampInput, referenceLpcd: number, maxPopulation: number) {
   const gap = gapLpcd(referenceLpcd, currentLpcd(c));
   return {
@@ -60,14 +60,14 @@ export function normalize(c: CampInput, referenceLpcd: number, maxPopulation: nu
   };
 }
 
-/** 3) Need Score = مجموع موزون، ناتجه 0–1 */
+/** 3) Need Score = weighted sum, result in 0–1 */
 export function needScore(ind: RecommendationItem['indicators'], w: AlgorithmWeights): number {
   const sum = w.gap + w.vulnerability + w.daysSince + w.population;
   if (sum <= 0) return 0;
   return clamp01((w.gap * ind.gap + w.vulnerability * ind.vulnerability + w.daysSince * ind.daysSince + w.population * ind.population) / sum);
 }
 
-/** 4) تحذيرات الجودة: لا تخفض الحصة تلقائيًا */
+/** 4) Quality warnings: they never reduce the share automatically */
 export function qualityWarnings(c: CampInput): WarningCode[] {
   if (!c.hasApprovedSnapshot) return ['NO_APPROVED_SNAPSHOT'];
   const w: WarningCode[] = [];
@@ -77,8 +77,8 @@ export function qualityWarnings(c: CampInput): WarningCode[] {
 }
 
 /**
- * 5) Water-filling: توزيع تناسبي مع سقف لكل مخيم، وإعادة توزيع الفائض.
- * يرجع القيم الحقيقية (قبل التقريب) وما تبقى غير موزّع.
+ * 5) Water-filling: proportional distribution with a per-camp cap, redistributing the surplus.
+ * Returns the real values (before rounding) and what remains undistributed.
  */
 export function waterFill(total: number, items: { id: string; weight: number; cap: number }[]) {
   const alloc = new Map<string, number>(items.map((i) => [i.id, 0]));
@@ -102,7 +102,7 @@ export function waterFill(total: number, items: { id: string; weight: number; ca
   return { alloc, undistributed: Math.max(0, remaining) };
 }
 
-/** 6) تقريب (أكبر باقٍ) يضمن أن المجموع = المتاح بالضبط، بلا قيم سالبة ولا تجاوز للسقف */
+/** 6) Largest-remainder rounding guarantees the sum equals the available amount exactly, with no negatives and no cap overruns */
 export function roundToTotal(raw: Map<string, number>, caps: Map<string, number>, target: number): Map<string, number> {
   const ids = [...raw.keys()].sort();
   const out = new Map<string, number>();
@@ -127,7 +127,7 @@ export function roundToTotal(raw: Map<string, number>, caps: Map<string, number>
   return out;
 }
 
-/** 7) نص السبب بالعربية */
+/** 7) Reason text (in Arabic) */
 export function buildReason(i: Omit<RecommendationItem, 'reason'>, referenceLpcd: number, c: CampInput): string {
   if (i.warnings.includes('NO_APPROVED_SNAPSHOT')) return 'لا توجد بيانات معتمدة لهذا المخيم، فلا يمكن حساب توصية. لا يعني ذلك عدم حاجته. اطلب Snapshot واعتماده.';
   const pct = Math.round(i.indicators.vulnerability * 100);

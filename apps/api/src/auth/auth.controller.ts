@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AllowAnyState, CurrentUser, Public } from '../common/decorators';
 import { AuthUser } from '../common/types';
@@ -7,11 +8,12 @@ import { ChangePasswordDto, EmailDto, LoginDto, RefreshDto, RegisterDto, ResetPa
 
 const strict = { default: { limit: 5, ttl: 60_000 } };
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private auth: AuthService) {}
 
-  /** الكتابي الوحيد المفتوح للعامة: Rate limit + CAPTCHA (TC23) */
+  /** The only public write endpoint: rate limit + CAPTCHA (TC23) */
   @Public() @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
   register(@Body() dto: RegisterDto) { return this.auth.register(dto); }
@@ -36,11 +38,11 @@ export class AuthController {
   @Post('logout')
   logout(@Body() dto: RefreshDto) { return this.auth.logout(dto.refreshToken); }
 
-  @AllowAnyState()
+  @ApiBearerAuth() @AllowAnyState()
   @Get('me')
   me(@CurrentUser() u: AuthUser) { return this.auth.me(u.id); }
 
-  @AllowAnyState() @HttpCode(200)
+  @ApiBearerAuth() @AllowAnyState() @HttpCode(200)
   @Post('change-password')
   changePassword(@CurrentUser() u: AuthUser, @Body() dto: ChangePasswordDto) { return this.auth.changePassword(u.id, dto.currentPassword, dto.newPassword); }
 

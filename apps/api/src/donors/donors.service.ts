@@ -22,7 +22,7 @@ export class DonorsService {
     );
   }
 
-  /** WebP/JPG/PNG فقط (لا SVG)، تُحوَّل إلى WebP بحجم موحد، والموافقة وتاريخها والنص البديل إلزامية (TC78، TC81) */
+  /** WebP/JPG/PNG only (no SVG), converted to WebP at a uniform size; consent, its date and alt text are mandatory (TC78, TC81) */
   async create(adminId: string, file: Express.Multer.File | undefined, dto: CreateDonorDto) {
     if (!file) throw new BadRequestException('صورة المانح مطلوبة');
     const type = detectFileType(file.buffer);

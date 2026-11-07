@@ -15,7 +15,7 @@ export class ResubmitDto {
 }
 
 export class ApproveDto {
-  /** تأكيد الأدمن لنوع الجهة عند القبول (للمؤسسات/المبادرات)؛ الافتراضي ما اقترحه المتقدم */
+  /** The admin confirms the entity type on approval (organizations/initiatives); defaults to what the applicant proposed */
   @IsOptional() @IsEnum(OrgType, { message: 'نوع الجهة يجب أن يكون محلية أو دولية أو مبادرة' }) orgType?: OrgType;
 }
 export class RejectDto { @IsString({ message: 'سبب الرفض إلزامي' }) @MinLength(3, { message: 'سبب الرفض إلزامي' }) @MaxLength(1000) reason: string; }
