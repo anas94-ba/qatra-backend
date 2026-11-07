@@ -1,4 +1,4 @@
-/** إزالة رموز HTML من النصوص المُدخلة (الواجهة تهرّب عند العرض أيضًا) */
+/** Strips HTML characters from user input (the UI also escapes on render) */
 export function sanitizeText(s: unknown): string {
   return typeof s === 'string' ? s.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim() : '';
 }
@@ -12,7 +12,7 @@ export function toCsv(rows: Record<string, unknown>[]): string {
   const cols = Object.keys(rows[0]);
   const esc = (v: unknown) => {
     let s = v == null ? '' : String(v);
-    if (/^[=+\-@]/.test(s)) s = "'" + s; // منع حقن الصيغ في Excel
+    if (/^[=+\-@]/.test(s)) s = "'" + s; // prevents formula injection in Excel
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return '\uFEFF' + [cols.join(','), ...rows.map((r) => cols.map((c) => esc(r[c])).join(','))].join('\n');

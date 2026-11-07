@@ -9,7 +9,7 @@ import { StorageService } from './storage.service';
 
 export const MAX_PROOF_BYTES = 5 * 1024 * 1024;
 
-/** رفع إثبات تسليم: jpg/png/webp/pdf فقط (لا SVG) وبحجم محدود، والفحص من المحتوى (TC65) */
+/** Delivery proof upload: jpg/png/webp/pdf only (no SVG) with a size limit, checked from content (TC65) */
 @Roles(Role.ORG)
 @Controller('org/uploads')
 export class UploadsController {

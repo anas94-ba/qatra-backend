@@ -6,8 +6,8 @@ import { PrismaService } from '../prisma/prisma.service';
 const CONFIRMED = ['CONFIRMED', 'CONFIRMED_DIFF'] as const;
 
 /**
- * الواجهة العامة: أرقام مجمّعة فقط، إحداثيات مقرّبة، لا بيانات شخصية ولا تفاصيل دفعات ولا بيانات أطفال/إعاقة.
- * تُحتسب الجهات المقبولة والنشطة فقط؛ الطلبات والحسابات غير المؤكدة لا تظهر أبدًا (TC119).
+ * Public API: aggregated numbers only, rounded coordinates, no personal data, no delivery details, no children/disability data.
+ * Only approved and active entities are counted; requests and unverified accounts never appear (TC119).
  */
 @Injectable()
 export class PublicService {
@@ -17,7 +17,7 @@ export class PublicService {
     const [camps, orgGroups, confirmed, pending, last] = await Promise.all([
       this.prisma.camp.count({ where: { status: 'ACTIVE', deletedAt: null } }),
       this.prisma.organization.groupBy({ by: ['orgType'], where: { status: 'ACTIVE', deletedAt: null }, _count: { _all: true } }),
-      // الأرقام التاريخية المؤكدة تبقى حتى لو أُوقفت الجهة لاحقًا (TC127)
+      // confirmed historical totals remain even if the entity is suspended later (TC127)
       this.prisma.delivery.aggregate({ where: { status: { in: [...CONFIRMED] } }, _sum: { receivedLiters: true } }),
       this.prisma.delivery.aggregate({ where: { status: 'PENDING', frozen: false, fromOrg: { status: 'ACTIVE' }, toCamp: { status: 'ACTIVE' } }, _sum: { sentLiters: true } }),
       this.prisma.delivery.aggregate({ where: { status: { in: [...CONFIRMED] } }, _max: { decidedAt: true } }),
@@ -26,14 +26,14 @@ export class PublicService {
     for (const g of orgGroups) byType[g.orgType] = g._count._all;
     return {
       camps,
-      organizations: { total: Object.values(byType).reduce((a, b) => a + b, 0), byType }, // مجموع الأنواع = الإجمالي (TC92)
+      organizations: { total: Object.values(byType).reduce((a, b) => a + b, 0), byType }, // sum of types = total (TC92)
       confirmedLiters: confirmed._sum.receivedLiters ?? 0,
-      pendingLiters: pending._sum.sentLiters ?? 0, // «قيد التأكيد» منفصل عن «المؤكد»
+      pendingLiters: pending._sum.sentLiters ?? 0, // "pending confirmation" is kept separate from "confirmed"
       lastUpdate: last._max.decidedAt,
     };
   }
 
-  /** خريطة شهرية: مخطط (من الاعتمادات) / مؤكد / قيد التأكيد، لكل مخيم منشور ونشط */
+  /** Monthly map: planned (from approvals) / confirmed / pending, for every published, active camp */
   async map(month?: string) {
     const m = month && /^\d{4}-(0[1-9]|1[0-2])$/.test(month) ? month : todayInGaza().slice(0, 7);
     const start = `${m}-01`;
@@ -72,7 +72,7 @@ export class PublicService {
 
   async donation() {
     const l = await this.prisma.donationLink.findFirst({ where: { isActive: true }, orderBy: { updatedAt: 'desc' } });
-    if (!l) return { available: false, message: 'التبرع عبر المنصة غير متاح حاليًا.' }; // يختفي الزر (TC71)
+    if (!l) return { available: false, message: 'التبرع عبر المنصة غير متاح حاليًا.' }; // the button disappears (TC71)
     return {
       available: true, linkType: l.linkType, url: l.url, whatsappNumber: l.linkType === 'WHATSAPP' ? l.whatsappNumber : null,
       receivingEntityName: l.receivingEntityName, description: l.description,
@@ -80,7 +80,7 @@ export class PublicService {
     };
   }
 
-  /** شريط المانحين: رابط الصورة والنص البديل والترتيب فقط، بلا معرّفات داخلية (TC76) */
+  /** Donor strip: image URL, alt text and order only, no internal ids (TC76) */
   async donors() {
     const rows = await this.prisma.donor.findMany({ where: { isPublished: true }, orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }], select: { imageUrl: true, altText: true, displayOrder: true } });
     return rows.map((r) => ({ imageUrl: r.imageUrl, altText: r.altText, order: r.displayOrder }));

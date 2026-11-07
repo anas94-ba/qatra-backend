@@ -15,7 +15,7 @@ async function bootstrap() {
   app.enableCors({ origin: env.corsOrigins, credentials: true });
   app.set('trust proxy', 1);
   app.setGlobalPrefix('api');
-  // whitelist: الحقول غير المعرّفة (مثل role/status) تُحذف بصمت (TC04)
+  // whitelist: undeclared fields (e.g. role/status) are silently dropped (TC04)
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   if (!process.env.S3_BUCKET) app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/files' });
   app.enableShutdownHooks();

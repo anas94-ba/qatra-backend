@@ -8,6 +8,6 @@ export class UpdateDonationLinkDto {
   @IsString() @MinLength(2) @MaxLength(150) receivingEntityName: string;
   @IsString() @MinLength(2) @MaxLength(1000) description: string;
   @IsBoolean() isActive: boolean;
-  /** إعادة المصادقة عند تغيير الرابط (TC73) */
+  /** Re-authentication when changing the link (TC73) */
   @IsString() password: string;
 }
