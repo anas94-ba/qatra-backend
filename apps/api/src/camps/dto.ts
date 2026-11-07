@@ -16,7 +16,7 @@ export class UpdateCampDto {
   @IsOptional() @IsNumber() lng?: number;
   @IsOptional() @IsBoolean() publicVisible?: boolean;
 }
-/** مدير المخيم يعدّل بيانات مخيمه الوصفية فقط */
+/** A camp manager edits only the descriptive data of their own camp */
 export class UpdateOwnCampDto {
   @IsOptional() @IsString() @MinLength(2) @MaxLength(120) region?: string;
   @IsOptional() @IsNumber() lat?: number;
@@ -28,7 +28,7 @@ export class CreateSnapshotDto {
   @IsInt() @Min(0) @Max(1_000_000) population: number;
   @IsInt() @Min(0) @Max(1_000_000) children: number;
   @IsInt() @Min(0) @Max(1_000_000) disabled: number;
-  /** لترات يوميًا تصل المخيم من مصادر أخرى (المسلَّم عبر المنصة يُشتق من الدفعات المؤكدة) */
+  /** Liters per day reaching the camp from other sources (liters delivered through the platform are derived from confirmed deliveries) */
   @IsInt() @Min(0) @Max(100_000_000) waterReceivedLiters: number;
   @IsOptional() @IsISO8601({ strict: true }) lastDistributionAt?: string;
   @IsOptional() @IsString() @MaxLength(1000) otherSources?: string;

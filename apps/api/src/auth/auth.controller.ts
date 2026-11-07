@@ -11,7 +11,7 @@ const strict = { default: { limit: 5, ttl: 60_000 } };
 export class AuthController {
   constructor(private auth: AuthService) {}
 
-  /** الكتابي الوحيد المفتوح للعامة: Rate limit + CAPTCHA (TC23) */
+  /** The only public write endpoint: rate limit + CAPTCHA (TC23) */
   @Public() @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
   register(@Body() dto: RegisterDto) { return this.auth.register(dto); }

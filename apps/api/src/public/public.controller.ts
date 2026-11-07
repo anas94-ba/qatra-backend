@@ -4,7 +4,7 @@ import { PublicService } from './public.service';
 
 const CACHE = 'public, max-age=60, stale-while-revalidate=300';
 
-/** قراءة فقط وبلا مصادقة (TC20) */
+/** Read-only and unauthenticated (TC20) */
 @Public()
 @Controller('public')
 export class PublicController {

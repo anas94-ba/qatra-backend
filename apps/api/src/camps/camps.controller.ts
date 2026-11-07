@@ -18,7 +18,7 @@ export class CampController {
   @Post('snapshots')
   async createSnapshot(@CurrentUser() u: AuthUser, @Body() dto: CreateSnapshotDto) {
     const snap = await this.svc.createSnapshot(u, dto);
-    // إشعار الأدمن بوجود Snapshot للمراجعة
+    // notify admins that a Snapshot awaits review
     await this.notifications.notify(await this.notifications.adminIds(), { type: 'SNAPSHOT_SUBMITTED', title: 'Snapshot جديد للمراجعة', body: 'أرسل مخيم بيانات جديدة بانتظار الاعتماد.' });
     return snap;
   }

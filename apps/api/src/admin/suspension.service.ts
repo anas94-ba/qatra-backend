@@ -11,10 +11,10 @@ import { PrismaService } from '../prisma/prisma.service';
 type Kind = 'camp' | 'org';
 
 /**
- * التوقيف حالة تشغيلية على Camp/Organization (ليس حذفًا):
- *  - تُلغى جلسات مستخدمي الجهة في نفس المعاملة
- *  - الدفعات PENDING ُتجمَّد ويُشعَر الطرف الآخر
- *  - الدفعات المؤكدة سابقًا تبقى في السجل والأرقام التاريخية
+ * Suspension is an operational state on Camp/Organization (not a deletion):
+ *  - the entity users' sessions are revoked in the same transaction
+ *  - PENDING deliveries are frozen and the other party is notified
+ *  - previously confirmed deliveries stay in the log and the historical totals
  */
 @Injectable()
 export class SuspensionService {
@@ -44,7 +44,7 @@ export class SuspensionService {
       const pending = await tx.delivery.findMany({ where: { ...side, status: 'PENDING', frozen: false }, select: { id: true, toCampId: true, fromOrgId: true } });
       if (pending.length) await tx.delivery.updateMany({ where: { id: { in: pending.map((d) => d.id) } }, data: { frozen: true } });
       for (const d of pending) {
-        // إشعار الطرف الآخر بتجميد الدفعة
+        // notify the other party that the delivery is frozen
         const other = kind === 'camp' ? await this.notifications.orgUserIds(d.fromOrgId, tx) : await this.notifications.campUserIds(d.toCampId, tx);
         await this.notifications.notify(other, { type: 'DELIVERY_FROZEN', title: 'دفعة مجمّدة', body: 'جُمّدت دفعة معلّقة لأن أحد طرفيها موقوف. سيقرر الأدمن مصيرها.', deliveryId: d.id }, tx);
       }
@@ -62,7 +62,7 @@ export class SuspensionService {
       const data = { status: 'ACTIVE' as const, suspendedReason: null, suspendedAt: null, suspendedById: null };
       if (kind === 'camp') await tx.camp.update({ where: { id }, data });
       else await tx.organization.update({ where: { id }, data });
-      // تعود الدفعات المجمّدة إلى PENDING، إلا إن كان الطرف الآخر موقوفًا أيضًا
+      // frozen deliveries go back to PENDING, unless the other party is also suspended
       const where: Prisma.DeliveryWhereInput = kind === 'camp' ? { toCampId: id, fromOrg: { status: 'ACTIVE' } } : { fromOrgId: id, toCamp: { status: 'ACTIVE' } };
       const r = await tx.delivery.updateMany({ where: { ...where, frozen: true, status: 'PENDING' }, data: { frozen: false } });
       await this.audit.log({ userId: adminId, action: 'REACTIVATE', entity: kind === 'camp' ? 'Camp' : 'Organization', entityId: id, before: { status: 'SUSPENDED' }, after: { status: 'ACTIVE', unfrozenDeliveries: r.count } }, tx);
@@ -72,7 +72,7 @@ export class SuspensionService {
     return { id, status: 'ACTIVE' };
   }
 
-  /** قرار الأدمن بشأن دفعة مجمّدة: إلغاء أو إبقاء، مع إشعار الطرفين (TC124) */
+  /** Admin decision on a frozen delivery: cancel or keep, notifying both parties (TC124) */
   async resolveFrozen(adminId: string, deliveryId: string, action: 'CANCEL' | 'KEEP', note?: string) {
     const d = await this.prisma.delivery.findUnique({ where: { id: deliveryId } });
     if (!d) throw new NotFoundException('الدفعة غير موجودة');
@@ -92,7 +92,7 @@ export class SuspensionService {
     return { id: d.id, action };
   }
 
-  /** إعادة تعيين كلمة مرور مستخدم بعد تحقق الأدمن من الهوية؛ تُلغى جلساته (A18) */
+  /** Reset a user's password after the admin verified their identity; their sessions are revoked (A18) */
   async resetUserPassword(adminId: string, userId: string) {
     const u = await this.prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
     if (!u) throw new NotFoundException('المستخدم غير موجود');

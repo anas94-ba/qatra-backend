@@ -7,8 +7,8 @@ export type UserWithRels = Prisma.UserGetPayload<{ include: typeof userInclude }
 export const MAX_ATTEMPTS = 3;
 
 /**
- * الوجهة بعد الدخول، يحددها الخادم من الحالة (FR-47). تُحسب عند كل طلب أيضًا (FR-48)،
- * فلا يكفي أن يكون الـ Token سليمًا.
+ * Landing after login, decided by the server from the account state (FR-47). Also evaluated on every request (FR-48),
+ * so a valid token alone is not enough.
  */
 export function computeLanding(u: Pick<UserWithRels, 'emailVerifiedAt' | 'status' | 'role' | 'camp' | 'organization' | 'registrationRequest'>): Landing {
   if (!u.emailVerifiedAt) return 'EMAIL_VERIFY';

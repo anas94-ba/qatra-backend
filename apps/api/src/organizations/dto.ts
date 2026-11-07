@@ -5,7 +5,7 @@ import { PaginationDto } from '../common/pagination';
 export class UpdateOrgDto {
   @IsOptional() @IsString() @MaxLength(2000) description?: string;
   @IsOptional() @IsString() @MaxLength(200) contact?: string;
-  /** موجود لرصد المحاولة: المؤسسة لا تعدّل نوعها (TC91) فيُرفض بـ 403 */
+  /** Present only to detect the attempt: an organization cannot edit its type (TC91), so it is rejected with 403 */
   @IsOptional() @IsString() orgType?: string;
 }
 export class ChangeOrgTypeDto { @IsEnum(OrgType, { message: 'نوع الجهة إلزامي' }) orgType: OrgType; }

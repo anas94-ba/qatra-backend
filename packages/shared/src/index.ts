@@ -1,4 +1,4 @@
-// الأنواع وقواعد التحقق المشتركة بين الواجهة والـ API.
+// Types and validation rules shared between the UI and the API.
 export const ENTITY_TYPES = ['CAMP', 'LOCAL_ORG', 'INTERNATIONAL_ORG', 'INITIATIVE'] as const;
 export type EntityType = (typeof ENTITY_TYPES)[number];
 

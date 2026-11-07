@@ -3,7 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { ALLOW_ANY_STATE, IS_PUBLIC, ROLES } from '../common/decorators';
 
-/** حارس عام: كل مسار محمي ما لم يُوسم @Public، ولا يصل غير المقبول/الموقوف إلا للمسارات الموسومة @AllowAnyState (FR-48) */
+/** Global guard: every route is protected unless marked @Public; unapproved/suspended users reach only routes marked @AllowAnyState (FR-48) */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(private reflector: Reflector) {

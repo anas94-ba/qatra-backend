@@ -4,7 +4,7 @@ import { mkdir, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import { env } from '../config/env';
 
-/** S3/R2 عند ضبط S3_BUCKET، وإلا قرص محلي (التطوير) */
+/** S3/R2 when S3_BUCKET is set, otherwise local disk (development) */
 @Injectable()
 export class StorageService {
   private s3?: S3Client;

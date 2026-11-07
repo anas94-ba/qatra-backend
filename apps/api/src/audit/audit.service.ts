@@ -15,7 +15,7 @@ export interface AuditEntry {
 
 const SECRET_KEYS = new Set(['passwordHash', 'tokenHash', 'password', 'refreshToken']);
 
-/** نسخة JSON آمنة بلا أسرار، وتحوّل Date إلى نص */
+/** Secret-free JSON copy; Dates become strings */
 function scrub(v: unknown): Prisma.InputJsonValue | undefined {
   if (v === undefined || v === null) return undefined;
   return JSON.parse(JSON.stringify(v, (k, val) => (SECRET_KEYS.has(k) ? undefined : val)));
@@ -25,7 +25,7 @@ function scrub(v: unknown): Prisma.InputJsonValue | undefined {
 export class AuditService {
   constructor(private prisma: PrismaService) {}
 
-  /** يُمرَّر `tx` لتُسجَّل العملية الحساسة في نفس المعاملة */
+  /** Pass `tx` so the sensitive operation is logged in the same transaction */
   log(entry: AuditEntry, db: Db = this.prisma) {
     return db.auditLog.create({
       data: {
