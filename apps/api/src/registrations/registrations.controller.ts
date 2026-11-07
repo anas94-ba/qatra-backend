@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { AllowAnyState, CurrentUser, Roles } from '../common/decorators';
 import { AuthUser } from '../common/types';
@@ -6,6 +7,8 @@ import { ApproveDto, DirectAccountDto, HoldDto, RegistrationQueryDto, RejectDto,
 import { RegistrationsService } from './registrations.service';
 
 /** Request status pages for the applicant (pending / rejected): view and resubmit only */
+@ApiTags('Registration (applicant)')
+@ApiBearerAuth()
 @Controller('registration')
 export class RegistrationController {
   constructor(private svc: RegistrationsService) {}
@@ -18,6 +21,8 @@ export class RegistrationController {
 }
 
 @Roles(Role.ADMIN)
+@ApiTags('Admin - Registrations')
+@ApiBearerAuth()
 @Controller('admin')
 export class AdminRegistrationsController {
   constructor(private svc: RegistrationsService) {}

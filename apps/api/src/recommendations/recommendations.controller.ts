@@ -1,4 +1,5 @@
 import { BadRequestException, Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CurrentUser, Roles } from '../common/decorators';
 import { AuthUser } from '../common/types';
@@ -6,6 +7,8 @@ import { CreateConfigDto } from './dto';
 import { RecommendationsService } from './recommendations.service';
 
 @Roles(Role.ORG)
+@ApiTags('Recommendations')
+@ApiBearerAuth()
 @Controller('org/plans/:planId/recommendations')
 export class RecommendationsController {
   constructor(private svc: RecommendationsService) {}
@@ -14,6 +17,8 @@ export class RecommendationsController {
 }
 
 @Roles(Role.ADMIN)
+@ApiTags('Admin - Algorithm config')
+@ApiBearerAuth()
 @Controller('admin/algorithm-config')
 export class AlgorithmConfigController {
   constructor(private svc: RecommendationsService) {}

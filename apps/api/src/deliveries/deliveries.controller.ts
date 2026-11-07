@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query, Res } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import type { Response } from 'express';
 import { CurrentUser, Roles } from '../common/decorators';
@@ -13,6 +14,8 @@ function asCsv(res: Response, csv: string, filename: string): string {
 }
 
 @Roles(Role.ORG)
+@ApiTags('Org - Deliveries')
+@ApiBearerAuth()
 @Controller('org/deliveries')
 export class OrgDeliveriesController {
   constructor(private svc: DeliveriesService) {}
@@ -36,6 +39,8 @@ export class OrgDeliveriesController {
 }
 
 @Roles(Role.CAMP_REP)
+@ApiTags('Camp - Deliveries')
+@ApiBearerAuth()
 @Controller('camp/deliveries')
 export class CampDeliveriesController {
   constructor(private svc: DeliveriesService) {}
@@ -59,6 +64,8 @@ export class CampDeliveriesController {
 }
 
 @Roles(Role.ADMIN)
+@ApiTags('Admin - Deliveries')
+@ApiBearerAuth()
 @Controller('admin/deliveries')
 export class AdminDeliveriesController {
   constructor(private svc: DeliveriesService) {}
