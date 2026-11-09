@@ -3,12 +3,14 @@
  *  - Always: first admin + first algorithm config (the initial weights are not approved humanitarian standards and need review by a WASH specialist)
  *  - SEED_DEMO=true (staging/development only): fully fake data, @demo.test emails, no real data
  */
+import 'dotenv/config';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, Role } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { addDays, toDateOnly, todayInGaza } from '../src/common/gaza-date';
 import { recommend } from '../src/recommendations/algorithm';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 const hash = (p: string) => argon2.hash(p, { type: argon2.argon2id });
 
 async function seedCore() {
