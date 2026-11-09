@@ -1,15 +1,22 @@
 {
   "name": "qatra",
-  "version": "0.1.0",
+  "version": "0.8.0",
   "private": true,
   "description": "قطرة - منصة تنسيق توزيع مياه الشرب على مخيمات غزة (MVP)",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "api:dev": "npm run start:dev -w @qatra/api",
     "api:build": "npm run build -w @qatra/api",
     "api:test": "npm run test -w @qatra/api",
     "db:migrate": "npm run migrate:dev -w @qatra/api",
-    "db:seed": "npm run seed -w @qatra/api"
+    "db:seed": "npm run seed -w @qatra/api",
+    "deps:update": "npx npm-check-updates --workspaces --root -u && npm install && npm audit --omit=dev",
+    "audit": "npm audit --omit=dev --audit-level=high"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  }
 }

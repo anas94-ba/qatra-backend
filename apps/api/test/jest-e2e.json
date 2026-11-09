@@ -2,7 +2,16 @@
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": ".",
   "testRegex": ".e2e-spec.ts$",
-  "transform": { "^.+\\.ts$": "ts-jest" },
+  "transform": {
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        "isolatedModules": true,
+        "diagnostics": false,
+        "tsconfig": { "module": "commonjs", "moduleResolution": "node10", "ignoreDeprecations": "6.0", "esModuleInterop": true, "experimentalDecorators": true, "emitDecoratorMetadata": true, "target": "ES2022" }
+      }
+    ]
+  },
   "testEnvironment": "node",
   "testTimeout": 30000
 }
