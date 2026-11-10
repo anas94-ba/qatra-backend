@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger as NestLogger, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { join } from 'path';
@@ -22,6 +22,6 @@ async function bootstrap() {
   app.enableShutdownHooks();
   const docsEnabled = setupSwagger(app);
   await app.listen(env.port);
-  if (docsEnabled) Logger.log(`API docs: http://localhost:${env.port}/${SWAGGER_PATH}`, 'Bootstrap');
+  if (docsEnabled) NestLogger.log(`API docs: http://localhost:${env.port}/${SWAGGER_PATH}`, 'Bootstrap');
 }
 bootstrap();
