@@ -10,6 +10,9 @@ packages/shared   الأنواع والثوابت المشتركة
 docker-compose.yml  Postgres + Mailpit (بريد وهمي) + API
 ```
 
+## المتطلبات
+Node.js **22.12+** (يُفضَّل **24 LTS**، وهو المستخدم في CI والـ Docker)، وPostgreSQL 14+.
+
 ## التشغيل محليًا
 ```bash
 docker compose up -d db mailpit
@@ -54,6 +57,14 @@ npm run test:e2e -w @qatra/api    # تكامل: يحتاج DATABASE_URL لقاع
 ```
 الـ interface في `apps/api/src/common/pagination.ts` (`PaginationDto` يُورَّث في DTO كل قائمة، و`paginate()` تقرأ الصفحة والعدد في معاملة واحدة).
 فلتر الطرف الآخر في سجلات الدفعات اسمه `counterpartyId` (المخيم للمؤسسة، والمؤسسة للمخيم). تصدير CSV يتجاهل الصفحات (حتى 5000 صف).
+
+## الحزم والأمان (Dependencies)
+- **NestJS 12** وكل حزمه الرسمية على الخط 12 (Express 5, multer 2)، وPrisma على **الخط 7** المستقر.
+  لا تنفّذ `npm install prisma@latest`: الوسم `latest` صار يشير إلى Prisma 8 وهو ما زال release candidate بواجهة مختلفة كليًا.
+- Prisma 7 يقرأ رابط القاعدة من `apps/api/prisma.config.ts` ويحتاج driver adapter (`@prisma/adapter-pg`)؛ الـ seed يعمل بـ `tsx`.
+- لتحديث كل الحزم لآخر إصدار مناسب ثم فحص الثغرات: `npm run deps:update` (يستثني Prisma وTypeScript وpino من القفز لمايجر جديد، راجع `.ncurc.cjs`).
+- فحص الثغرات فقط: `npm run audit` (حزم الإنتاج، مستوى high وما فوق)، ويعمل أيضًا في CI.
+- أصلح المفتاح `JWT_SECRET`: في الإنتاج يجب ألا يقل عن 32 حرفًا وإلا يرفض الخادم الإقلاع.
 
 ## قواعد مهمة
 - بداية الحملة اليوم أو بعده بتوقيت `Asia/Gaza` (محسوبة في الخادم)، وتاريخ الدفعة ليس في المستقبل.
