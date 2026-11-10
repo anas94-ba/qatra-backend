@@ -11,7 +11,7 @@ import { JwtStrategy } from './jwt.strategy';
 
 @Global()
 @Module({
-  imports: [PassportModule, JwtModule.registerAsync({ useFactory: () => ({ secret: env.jwtSecret, signOptions: { expiresIn: env.accessTtl } }) })],
+  imports: [PassportModule, JwtModule.registerAsync({ useFactory: () => ({ secret: env.jwtSecret, signOptions: { algorithm: 'HS256', expiresIn: env.accessTtlSeconds } }) })],
   controllers: [AuthController],
   providers: [
     AuthService, CaptchaService, JwtStrategy,
