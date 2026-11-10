@@ -9,7 +9,8 @@ import { computeLanding, userInclude } from './landing';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private prisma: PrismaService) {
-    super({ jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), ignoreExpiration: false, secretOrKey: env.jwtSecret });
+    // Pin the algorithm so a token signed with another one (or "none") is never accepted
+    super({ jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), ignoreExpiration: false, secretOrKey: env.jwtSecret, algorithms: ['HS256'] });
   }
 
   /** The user and entity are read from the database on every request, so a suspension takes effect immediately (TC128). */
