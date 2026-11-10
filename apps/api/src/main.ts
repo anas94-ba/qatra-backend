@@ -20,8 +20,8 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   if (!process.env.S3_BUCKET) app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/files' });
   app.enableShutdownHooks();
-  setupSwagger(app);
+  const docsEnabled = setupSwagger(app);
   await app.listen(env.port);
-  Logger.log(`API docs: http://localhost:${env.port}/${SWAGGER_PATH}`, 'Bootstrap');
+  if (docsEnabled) Logger.log(`API docs: http://localhost:${env.port}/${SWAGGER_PATH}`, 'Bootstrap');
 }
 bootstrap();
