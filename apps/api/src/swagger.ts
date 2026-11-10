@@ -11,7 +11,7 @@ export function setupSwagger(app: INestApplication): void {
   const config = new DocumentBuilder()
     .setTitle('Qatra API')
     .setDescription('Coordination of filtered drinking-water distribution to Gaza camps. List endpoints accept ?page=1&pageSize=10 (default 10, max 100).')
-    .setVersion('0.5.0')
+    .setVersion('0.8.0')
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
     .build();
 

@@ -1,5 +1,5 @@
 # Build from the repository root:  docker build -f apps/api/Dockerfile -t qatra-api .
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY apps/api apps/api
@@ -8,12 +8,13 @@ COPY packages/shared packages/shared
 RUN if [ -f package-lock.json ]; then npm ci; else npm install --no-audit; fi
 RUN npm run build -w @qatra/api
 
-FROM node:22-alpine
+FROM node:24-alpine
 WORKDIR /app/apps/api
 ENV NODE_ENV=production
 COPY --from=build /app/node_modules /app/node_modules
 COPY --from=build /app/apps/api/dist ./dist
 COPY --from=build /app/apps/api/prisma ./prisma
+COPY --from=build /app/apps/api/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/apps/api/package.json ./
 RUN mkdir -p uploads && chown -R node:node /app/apps/api
 USER node
