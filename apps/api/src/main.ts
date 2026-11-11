@@ -22,6 +22,6 @@ async function bootstrap() {
   app.enableShutdownHooks();
   const docsEnabled = setupSwagger(app);
   await app.listen(env.port);
-  if (docsEnabled) NestLogger.log(`API docs: ${env.appUrl}:${env.port}/${SWAGGER_PATH}`, 'Bootstrap');
+  if (docsEnabled) NestLogger.log(`API docs: ${env.appUrl}/${SWAGGER_PATH}`, 'Bootstrap');
 }
 bootstrap();
