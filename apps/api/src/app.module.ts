@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 import { AuditModule } from './audit/audit.module';
 import { MailModule } from './mail/mail.module';
+import { MediaModule } from './media/media.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AuthModule } from './auth/auth.module';
 import { RegistrationsModule } from './registrations/registrations.module';
@@ -39,6 +40,7 @@ import { JobsModule } from './jobs/jobs.module';
     OrganizationsModule,
     RecommendationsModule,
     ApprovalsModule,
+    MediaModule,
     StorageModule,
     DeliveriesModule,
     PublicModule,

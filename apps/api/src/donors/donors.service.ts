@@ -1,17 +1,17 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import sharp from 'sharp';
 import { AuditService } from '../audit/audit.service';
 import { detectFileType } from '../common/file-type';
 import { PaginationDto, paginate } from '../common/pagination';
 import { escapeHtml, sanitizeText } from '../common/text';
+import { IMAGE_PRESETS, ImageService } from '../media/image.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { uploadKey } from '../storage/upload-key';
 import { CreateDonorDto, UpdateDonorDto } from './dto';
 
 @Injectable()
 export class DonorsService {
-  constructor(private prisma: PrismaService, private audit: AuditService, private storage: StorageService) {}
+  constructor(private prisma: PrismaService, private audit: AuditService, private storage: StorageService, private images: ImageService) {}
 
   list(q: PaginationDto) {
     return paginate(
@@ -27,8 +27,8 @@ export class DonorsService {
     if (!file) throw new BadRequestException('صورة المانح مطلوبة');
     const type = detectFileType(file.buffer);
     if (!type || type === 'pdf') throw new BadRequestException('نوع الصورة غير مسموح (WebP/JPG/PNG فقط)');
-    const buf = await sharp(file.buffer).rotate().resize(400, 400, { fit: 'cover' }).webp({ quality: 80 }).toBuffer();
-    const imageUrl = await this.storage.put(buf, `donors/${randomUUID()}.webp`, 'image/webp');
+    const { buffer } = await this.images.toWebp(file.buffer, IMAGE_PRESETS.donor);
+    const imageUrl = await this.storage.put(buffer, uploadKey('donors', 'webp'), 'image/webp');
     const donor = await this.prisma.donor.create({
       data: {
         imageUrl, altText: escapeHtml(sanitizeText(dto.altText)), consentGivenAt: new Date(dto.consentGivenAt), consentSource: sanitizeText(dto.consentSource),
