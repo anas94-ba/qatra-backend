@@ -3,7 +3,9 @@ dist/
 .env
 .env.*
 !.env.example
-uploads/
+apps/api/uploads/
+apps/api/public/uploads/*
+!apps/api/public/uploads/.gitkeep
 coverage/
 *.log
 .DS_Store

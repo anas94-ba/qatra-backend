@@ -1,3 +1,5 @@
+import { isAbsolute, join } from 'path';
+
 const num = (k: string, d: number) => Number(process.env[k] ?? d);
 
 const UNITS: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86_400 };
@@ -15,6 +17,15 @@ export const env = {
   get port() { return num('PORT', 4000); },
   get appUrl() { return process.env.APP_URL ?? 'http://localhost:3000'; },
   get apiPublicUrl() { return process.env.API_PUBLIC_URL ?? 'http://localhost:4000/api'; },
+  /** Local uploads live in public/uploads (relative paths are resolved from the working directory) */
+  get uploadDir() {
+    const dir = process.env.UPLOAD_DIR ?? 'public/uploads';
+    return isAbsolute(dir) ? dir : join(process.cwd(), dir);
+  },
+  /** Origin that serves /uploads: PUBLIC_BASE_URL, or API_PUBLIC_URL without its trailing /api */
+  get publicBaseUrl() {
+    return (process.env.PUBLIC_BASE_URL ?? this.apiPublicUrl.replace(/\/api\/?$/, '')).replace(/\/$/, '');
+  },
   get corsOrigins() { return (process.env.CORS_ORIGINS ?? 'http://localhost:3000').split(',').map((s) => s.trim()); },
   /** A short or missing secret makes tokens forgeable, so production refuses to start with one */
   get jwtSecret() {

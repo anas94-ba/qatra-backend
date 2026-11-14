@@ -4,7 +4,10 @@ import { mkdir, writeFile } from 'fs/promises';
 import { dirname, join } from 'path';
 import { env } from '../config/env';
 
-/** S3/R2 when S3_BUCKET is set, otherwise local disk (development) */
+/** URL prefix under which local uploads are served (see main.ts) */
+export const UPLOADS_PREFIX = '/uploads';
+
+/** S3/R2 when S3_BUCKET is set, otherwise the local public/uploads folder (development, small deployments) */
 @Injectable()
 export class StorageService {
   private s3?: S3Client;
@@ -19,12 +22,14 @@ export class StorageService {
 
   async put(buffer: Buffer, key: string, contentType: string): Promise<string> {
     if (process.env.S3_BUCKET) {
-      await this.client().send(new PutObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key, Body: buffer, ContentType: contentType }));
+      await this.client().send(new PutObjectCommand({
+        Bucket: process.env.S3_BUCKET, Key: key, Body: buffer, ContentType: contentType, CacheControl: 'public, max-age=31536000, immutable',
+      }));
       return `${(process.env.S3_PUBLIC_URL ?? '').replace(/\/$/, '')}/${key}`;
     }
-    const path = join(process.cwd(), 'uploads', key);
+    const path = join(env.uploadDir, key);
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, buffer);
-    return `${env.apiPublicUrl.replace(/\/api$/, '')}/files/${key}`;
+    return `${env.publicBaseUrl}${UPLOADS_PREFIX}/${key}`;
   }
 }

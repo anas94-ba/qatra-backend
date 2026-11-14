@@ -16,7 +16,9 @@ COPY --from=build /app/apps/api/dist ./dist
 COPY --from=build /app/apps/api/prisma ./prisma
 COPY --from=build /app/apps/api/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/apps/api/package.json ./
-RUN mkdir -p uploads && chown -R node:node /app/apps/api
+# Uploaded images (WebP) and PDFs are written here; mount a volume or use S3/R2 so they survive redeploys
+RUN mkdir -p public/uploads && chown -R node:node /app/apps/api
+VOLUME ["/app/apps/api/public/uploads"]
 USER node
 EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget -qO- http://localhost:4000/api/health || exit 1
