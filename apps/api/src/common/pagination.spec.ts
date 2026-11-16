@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { buildMeta, DEFAULT_PAGE_SIZE, mapPage, toWindow } from './pagination';
 
 describe('pagination', () => {

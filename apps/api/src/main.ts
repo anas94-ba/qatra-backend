@@ -31,6 +31,6 @@ async function bootstrap() {
   app.enableShutdownHooks();
   const docsEnabled = setupSwagger(app);
   await app.listen(env.port);
-  if (docsEnabled) Logger.log(`API docs: http://localhost:${env.port}/${SWAGGER_PATH}`, 'Bootstrap');
+  if (docsEnabled) Logger.log(`API docs: ${env.appUrl}/${SWAGGER_PATH}`, 'Bootstrap');
 }
 bootstrap();
