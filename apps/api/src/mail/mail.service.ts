@@ -1,21 +1,25 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { env } from '../config/env';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST ?? 'localhost',
-    port: Number(process.env.SMTP_PORT ?? 1025),
-    secure: Number(process.env.SMTP_PORT) === 465,
-    auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
-  });
+  private resend = new Resend(process.env.RESEND_API_KEY);
 
   /** Never throws: a mail failure does not fail the operation (TC05). Returns false on failure. */
   async send(to: string, mail: { subject: string; html: string }): Promise<boolean> {
     try {
-      await this.transporter.sendMail({ from: env.mailFrom, to, subject: mail.subject, html: mail.html });
+      const { error } = await this.resend.emails.send({
+        from: env.mailFrom,
+        to,
+        subject: mail.subject,
+        html: mail.html,
+      });
+      if (error) {
+        this.logger.error(`mail to ${to} failed: ${error.message}`);
+        return false;
+      }
       return true;
     } catch (err) {
       this.logger.error(`mail to ${to} failed: ${(err as Error).message}`);
